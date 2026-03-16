@@ -1,82 +1,100 @@
-import { isConnected, getAddress } from "@stellar/freighter-api";
+import freighter from "@stellar/freighter-api";
+const { isConnected, getPublicKey, signTransaction: signFreighter } = freighter;
 import albedo from "@albedo-link/intent";
-import * as StellarSdk from "@stellar/stellar-sdk";
+import { 
+  Transaction, 
+  Keypair, 
+  Networks, 
+  Asset, 
+  Horizon 
+} from "@stellar/stellar-sdk";
 
-export type WalletType = "freighter" | "albedo" | "manual";
+export type WalletType = "freighter" | "albedo" | null;
 
-export interface WalletState {
-  address: string | null;
-  type: WalletType | null;
-  connected: boolean;
-  balance: string;
-  inrEquivalent: string;
-  riskScore: number | null;
-  isBlocked: boolean;
-  hasUsdcTrustline: boolean;
-  isNewSeller: boolean;
-}
+const HORIZON_URL = "https://horizon-testnet.stellar.org";
+const server = new Horizon.Server(HORIZON_URL);
 
-const USDC_ASSET_CODE = "USDC";
-const USDC_ISSUER = "GBBD67IF64WOYID0G6A2665B3DB3E0A" ; // Example Public Issuer for USDC on Testnet/Mainnet
-const MOCK_INR_RATE = 83.50;
-
-// Mock Blocklist
-const BLOCKLIST = ["GBLOCK123...", "GSCAMMER..."];
-
-export const checkBlocklist = (address: string): boolean => {
-  return BLOCKLIST.includes(address);
-};
-
-export const runFraudCheck = async (address: string): Promise<number> => {
-  // Simulate a delay for the AI check
-  await new Promise(resolve => setTimeout(resolve, 1500));
-  
-  // Logic: More than 10 transactions = lower risk, but we mock it
-  if (address.startsWith("GB")) return 20; // Low risk
-  if (address.startsWith("GC")) return 75; // Medium risk
-  return 90; // High risk
-};
-
-export const getUsdcBalance = async (address: string): Promise<{ balance: string, hasTrustline: boolean }> => {
-  try {
-    const server = new StellarSdk.Horizon.Server("https://horizon-testnet.stellar.org");
-    const account = await server.loadAccount(address);
-    const usdcBalance = account.balances.find(
-      (b) => 'asset_code' in b && b.asset_code === USDC_ASSET_CODE && b.asset_issuer === USDC_ISSUER
-    );
-    
-    if (usdcBalance) {
-      return { balance: usdcBalance.balance, hasTrustline: true };
-    }
-    return { balance: "0.00", hasTrustline: false };
-  } catch (error) {
-    console.error("Error fetching balance:", error);
-    return { balance: "0.00", hasTrustline: false };
-  }
-};
-
-export const formatINR = (usdc: string | number): string => {
-  const amount = typeof usdc === "string" ? parseFloat(usdc) : usdc;
-  return (amount * MOCK_INR_RATE).toLocaleString("en-IN", {
-    maximumFractionDigits: 2,
-    minimumFractionDigits: 2,
-  });
-};
-
-export const connectFreighter = async (): Promise<string | null> => {
+/**
+ * Connect to Freighter wallet
+ */
+export const connectFreighter = async () => {
   if (await isConnected()) {
-    const { address } = await getAddress();
-    return address;
+    const publicKey = await getPublicKey();
+    return { publicKey, walletType: "freighter" as const };
   }
-  return null;
+  throw new Error("Freighter not installed");
 };
 
-export const connectAlbedo = async (): Promise<string | null> => {
+/**
+ * Connect to Albedo wallet
+ */
+export const connectAlbedo = async () => {
+  const result = await albedo.publicKey({
+    token: "safedeal_connect"
+  });
+  return { publicKey: result.pubkey, walletType: "albedo" as const };
+};
+
+/**
+ * Get balances for a public key (XLM and USDC)
+ */
+export const getBalances = async (publicKey: string) => {
   try {
-    const res = await albedo.publicKey({});
-    return res.pubkey;
+    const account = await server.loadAccount(publicKey);
+    let xlmBalance = "0";
+    let usdcBalance = "0";
+
+    for (const balance of account.balances) {
+      if (balance.asset_type === "native") {
+        xlmBalance = balance.balance;
+      } else if ("asset_code" in balance) {
+        if (
+          balance.asset_code === "USDC" && 
+          balance.asset_issuer === "GBBD67IF633SHJY6CIGWSBTEU77OUNMTAOOK7N6A4AKX2HPCY5NQXWVN" // Testnet USDC
+        ) {
+          usdcBalance = balance.balance;
+        }
+      }
+    }
+
+    return { xlmBalance, usdcBalance };
   } catch (error) {
-    console.error("Albedo connection failed:", error);
-    return null;
+    console.error("Error fetching balances:", error);
+    return { xlmBalance: "0", usdcBalance: "0" };
   }
+};
+
+/**
+ * Sign a transaction using the selected wallet
+ */
+export const signTransaction = async (
+  xdr: string, 
+  walletType: WalletType,
+  network: string = "TESTNET"
+) => {
+  if (walletType === "freighter") {
+    const result = await signFreighter(xdr, { 
+      network: network as any 
+    });
+    if (typeof result === "string") return result;
+    if ("signedTxXdr" in result) return result.signedTxXdr;
+    throw new Error("Failed to sign with Freighter");
+  } else if (walletType === "albedo") {
+    const result = await albedo.tx({
+      xdr,
+      network: "testnet"
+    });
+    return result.signed_envelope_xdr;
+  }
+  throw new Error("No wallet connected");
+};
+
+/**
+ * Simple check if wallet is connected (re-verify)
+ */
+export const isWalletConnected = async (walletType: WalletType) => {
+  if (walletType === "freighter") {
+    return await isConnected();
+  }
+  return !!walletType;
 };

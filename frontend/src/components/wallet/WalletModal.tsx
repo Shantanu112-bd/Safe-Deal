@@ -1,198 +1,176 @@
 "use client";
 
-import React from "react";
+import { useState } from "react";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription 
+} from "@/components/ui/dialog";
+import { GradientButton } from "@/components/ui/gradient-button";
 import { useWallet } from "@/context/WalletContext";
 import { 
-  X, 
   Wallet, 
-  AlertTriangle, 
-  ShieldCheck, 
-  ShieldAlert, 
-  ExternalLink,
-  ChevronRight,
-  Layers,
-  LogOut
+  Loader2, 
+  CheckCircle2, 
+  XCircle,
+  ShieldCheck,
+  Zap,
+  ArrowRight
 } from "lucide-react";
-import { motion } from "framer-motion";
-import { GradientButton } from "@/components/ui/gradient-button";
-import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface WalletModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export const WalletModal = ({ isOpen, onClose }: WalletModalProps) => {
-  const { 
-    connect, 
-    disconnect, 
-    connected, 
-    address, 
-    loading, 
-    isBlocked, 
-    riskScore, 
-    hasUsdcTrustline,
-    balance,
-    inrEquivalent
-  } = useWallet();
+type Step = "choose" | "connecting" | "success";
 
-  if (!isOpen) return null;
+export function WalletModal({ open, onOpenChange }: WalletModalProps) {
+  const [step, setStep] = useState<Step>("choose");
+  const { connectFreighter, connectAlbedo } = useWallet();
+  const [error, setError] = useState<string | null>(null);
 
-  const getRiskColor = (score: number) => {
-    if (score < 40) return "text-emerald-500 bg-emerald-50 border-emerald-100";
-    if (score < 70) return "text-orange-500 bg-orange-50 border-orange-100";
-    return "text-red-500 bg-red-50 border-red-100";
-  };
-
-  const getRiskLabel = (score: number) => {
-    if (score < 40) return "Low Risk ✅";
-    if (score < 70) return "Medium Risk ⚠️";
-    return "High Risk 🚨";
+  const handleConnect = async (type: "freighter" | "albedo") => {
+    setStep("connecting");
+    setError(null);
+    try {
+      if (type === "freighter") {
+        await connectFreighter();
+      } else {
+        await connectAlbedo();
+      }
+      setStep("success");
+      setTimeout(() => {
+        onOpenChange(false);
+        setStep("choose");
+      }, 2000);
+    } catch (err: any) {
+      setError(err.message || "Failed to connect");
+      setStep("choose");
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="w-full max-w-md overflow-hidden rounded-[2.5rem] bg-white shadow-2xl"
-      >
-        <div className="relative p-8">
-          <button 
-            onClick={onClose}
-            className="absolute right-6 top-6 flex size-10 items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-900 transition-colors"
-          >
-            <X className="size-5" />
-          </button>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
+        <div className="bg-slate-900 px-8 py-10 text-white relative">
+          <div className="absolute top-0 right-0 p-10 opacity-10 pointer-events-none">
+            <Wallet className="size-32" />
+          </div>
 
-          {!connected ? (
-            <div className="space-y-8">
-              <div className="space-y-2">
-                <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-xl shadow-slate-900/20">
-                  <Wallet className="size-8" />
+          <AnimatePresence mode="wait">
+            {step === "choose" && (
+              <motion.div
+                key="choose"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-6"
+              >
+                <div className="space-y-2">
+                  <DialogTitle className="text-3xl font-black italic-none">Secure Connect</DialogTitle>
+                  <DialogDescription className="text-slate-400 font-bold italic-none">
+                    Select your preferred Stellar wallet to continue.
+                  </DialogDescription>
                 </div>
-                <h2 className="text-3xl font-black text-slate-900">Connect Wallet</h2>
-                <p className="text-sm text-slate-500">Choose a Stellar wallet to continue to SafeDeal.</p>
-              </div>
 
-              <div className="grid gap-3">
-                <button 
-                  onClick={() => connect('freighter')}
-                  className="group flex w-full items-center justify-between rounded-2xl bg-slate-50 px-6 py-5 transition-all hover:bg-slate-900 hover:text-white"
-                  disabled={loading}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="flex size-10 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-100 group-hover:bg-slate-800 group-hover:ring-slate-700 transition-colors">
-                       <img src="https://www.freighter.app/favicon.ico" alt="Freighter" className="size-6" />
+                <div className="grid gap-4">
+                  <button
+                    onClick={() => handleConnect("freighter")}
+                    className="flex items-center justify-between group rounded-[2rem] bg-white/5 border border-white/10 p-5 transition-all hover:bg-white/10 hover:border-emerald-500/50"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="size-12 rounded-2xl bg-white/10 flex items-center justify-center">
+                         <img src="/freighter-logo.png" alt="Freighter" className="size-6 object-contain grayscale group-hover:grayscale-0 transition-all" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-black text-white italic-none">Freighter</p>
+                        <p className="text-[10px] uppercase font-black tracking-widest text-slate-500 italic-none">Safe Browser Extension</p>
+                      </div>
                     </div>
-                    <span className="font-bold">Freighter Wallet</span>
-                  </div>
-                  {loading ? <div className="size-5 border-2 border-current border-t-transparent animate-spin rounded-full" /> : <ChevronRight className="size-5 opacity-40" />}
-                </button>
+                    <ArrowRight className="size-5 text-slate-700 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />
+                  </button>
 
-                <button 
-                  onClick={() => connect('albedo')}
-                  className="group flex w-full items-center justify-between rounded-2xl bg-slate-50 px-6 py-5 transition-all hover:bg-slate-900 hover:text-white"
-                  disabled={loading}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="flex size-10 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-100 group-hover:bg-slate-800 group-hover:ring-slate-700 transition-colors">
-                       <img src="https://albedo.link/favicon.ico" alt="Albedo" className="size-6" />
+                  <button
+                    onClick={() => handleConnect("albedo")}
+                    className="flex items-center justify-between group rounded-[2rem] bg-white/5 border border-white/10 p-5 transition-all hover:bg-white/10 hover:border-emerald-500/50"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="size-12 rounded-2xl bg-white/10 flex items-center justify-center">
+                         <img src="/albedo-logo.png" alt="Albedo" className="size-6 object-contain grayscale group-hover:grayscale-0 transition-all" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-black text-white italic-none">Albedo</p>
+                        <p className="text-[10px] uppercase font-black tracking-widest text-slate-500 italic-none">Web Browser Wallet</p>
+                      </div>
                     </div>
-                    <span className="font-bold">Albedo Link</span>
-                  </div>
-                  {loading ? <div className="size-5 border-2 border-current border-t-transparent animate-spin rounded-full" /> : <ChevronRight className="size-5 opacity-40" />}
-                </button>
-              </div>
-              
-              <p className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                Secure 256-bit AES connection
-              </p>
-            </div>
-          ) : isBlocked ? (
-            <div className="space-y-8 py-4">
-              <div className="flex flex-col items-center text-center space-y-4">
-                <div className="flex size-20 items-center justify-center rounded-full bg-red-100 text-red-600 ring-8 ring-red-50">
-                  <ShieldAlert className="size-10" />
+                    <ArrowRight className="size-5 text-slate-700 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />
+                  </button>
                 </div>
-                <h2 className="text-2xl font-black text-slate-900">Access Restricted</h2>
-                <p className="text-slate-500 leading-relaxed italic-none">
-                  Your wallet <span className="font-mono text-xs font-bold text-slate-900 italic-none">({address?.slice(0, 6)}...{address?.slice(-4)})</span> has been flagged for suspicious activity by SafeDeal AI.
-                </p>
-              </div>
-              <GradientButton variant="variant" onClick={disconnect} className="w-full rounded-2xl py-4 italic-none">
-                Disconnect Wallet
-              </GradientButton>
-            </div>
-          ) : (
-            <div className="space-y-8">
-               <div className="flex items-center gap-4">
-                  <div className="flex size-14 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-xl shadow-emerald-600/20 italic-none">
-                    <ShieldCheck className="size-8 italic-none" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-black text-slate-900 italic-none">Wallet Secure</h2>
-                    <p className="text-xs font-bold text-slate-500 italic-none underline font-mono truncate max-w-[200px]">{address}</p>
-                  </div>
-               </div>
 
-               {riskScore !== null && (
-                 <div className={cn("rounded-2xl border p-4 flex items-center justify-between italic-none", getRiskColor(riskScore))}>
-                   <div className="flex items-center gap-3 italic-none">
-                      <ShieldCheck className="size-5 italic-none" />
-                      <span className="text-xs font-bold italic-none">Your wallet risk level: {getRiskLabel(riskScore)}</span>
+                {error && (
+                  <div className="flex items-center gap-2 rounded-2xl bg-red-500/10 p-4 border border-red-500/20 text-red-400 text-xs font-bold italic-none">
+                    <XCircle className="size-4 shrink-0" />
+                    {error}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-center gap-4 pt-4 opacity-40">
+                   <div className="flex items-center gap-1.5 grayscale">
+                      <ShieldCheck className="size-3" />
+                      <span className="text-[8px] font-black uppercase tracking-widest">End-to-End Encryption</span>
                    </div>
-                   <span className="text-xs font-black italic-none">{riskScore}/100</span>
-                 </div>
-               )}
+                   <div className="flex items-center gap-1.5 grayscale">
+                      <Zap className="size-3" />
+                      <span className="text-[8px] font-black uppercase tracking-widest">Instant Settlement</span>
+                   </div>
+                </div>
+              </motion.div>
+            )}
 
-               {!hasUsdcTrustline && (
-                  <div className="rounded-2xl border border-orange-200 bg-orange-50 p-4 space-y-3 italic-none">
-                    <div className="flex items-center gap-3 text-orange-700 italic-none">
-                       <AlertTriangle className="size-5 shrink-0 italic-none" />
-                       <span className="text-xs font-bold italic-none">Add USDC to your wallet first</span>
-                    </div>
-                    <p className="text-[11px] text-orange-600 leading-relaxed italic-none">
-                      SafeDeal requires a USDC trustline to process payments securely.
-                    </p>
-                    <a 
-                      href="https://laboratory.stellar.org/#txbuilder?params=eyJhdHRyaWJ1dGVzIjp7ImZlZSI6IjEwMCIsIm9wdGlvbnMiOnsiaGVscCI6ZmFsc2UsImNvbmZpcm0iOmZhbHNlfX0sIm9wZXJhdGlvbnMiOlt7InR5cGUiOiJjaGFuZ2VfdHJ1c3QiLCJhc3NldCI6eyJ0eXBlIjoiY3JlZGl0X2FscGhhbnVtNCIsImNvZGUiOiJVU0RDIiwiaXNzdWVyIjoiR0JCRDY3SUY2NFdPWUlEMkc2QTI2NjVCM0RCM0UwQSJ9fV19&network=testnet"
-                      target="_blank"
-                      className="flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-black text-orange-700 shadow-sm ring-1 ring-orange-100 hover:bg-orange-100 transition-all italic-none"
-                    >
-                      Add Trustline via Laboratory
-                      <ExternalLink className="size-3 italic-none" />
-                    </a>
-                  </div>
-               )}
+            {step === "connecting" && (
+              <motion.div
+                key="connecting"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.1 }}
+                className="flex flex-col items-center justify-center py-10 space-y-6"
+              >
+                <div className="relative">
+                   <div className="size-24 rounded-full border-4 border-white/5 border-t-emerald-500 animate-spin" />
+                   <div className="absolute inset-0 flex items-center justify-center">
+                      <Wallet className="size-8 text-white" />
+                   </div>
+                </div>
+                <div className="text-center space-y-2">
+                  <h3 className="text-2xl font-black italic-none">Verifying Account</h3>
+                  <p className="text-slate-400 font-bold italic-none">Waiting for signature on Stellar...</p>
+                </div>
+              </motion.div>
+            )}
 
-               <div className="rounded-3xl bg-slate-50 p-6 space-y-4 border border-slate-100 italic-none">
-                  <div className="flex items-center justify-between text-xs font-bold text-slate-400 italic-none">
-                    <span>AVAILABLE BALANCE</span>
-                    <span className="flex items-center gap-1 italic-none"><Layers className="size-3 italic-none" /> TESTNET</span>
-                  </div>
-                  <div>
-                    <div className="text-3xl font-black text-slate-900 italic-none">{balance} USDC</div>
-                    <div className="text-sm font-bold text-emerald-600 italic-none">≈ ₹{inrEquivalent}</div>
-                  </div>
-               </div>
-
-               <div className="flex gap-3 mt-4 italic-none">
-                 <GradientButton onClick={onClose} className="flex-1 rounded-2xl py-4 font-bold italic-none">
-                   Done
-                 </GradientButton>
-                 <button 
-                  onClick={disconnect}
-                  className="flex size-14 items-center justify-center rounded-2xl bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all italic-none"
-                 >
-                   <LogOut className="size-6 italic-none" />
-                 </button>
-               </div>
-            </div>
-          )}
+            {step === "success" && (
+              <motion.div
+                key="success"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center justify-center py-10 space-y-6"
+              >
+                <div className="size-24 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-2xl shadow-emerald-500/40">
+                   <CheckCircle2 className="size-12" />
+                </div>
+                <div className="text-center space-y-2">
+                  <h3 className="text-2xl font-black italic-none">Secured & Linked</h3>
+                  <p className="text-slate-400 font-bold italic-none">Your wallet is ready for SafeDeal.</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-      </motion.div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
-};
+}

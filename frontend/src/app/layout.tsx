@@ -1,43 +1,40 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { WalletProvider } from "@/context/WalletContext";
-import { Navbar } from "@/components/Navbar";
+import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "sonner";
-import ErrorBoundary from "@/components/ErrorBoundary";
+import { Navbar } from "@/components/layout/Navbar";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
-});
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "SafeDeal — Trusted Escrow for Social Commerce",
-  description:
-    "The AI-protected escrow platform for WhatsApp, Instagram & Telegram sellers. Buyers pay safely, sellers ship confidently — backed by Stellar blockchain.",
+  title: "SafeDeal | Secure Escrow Payments",
+  description: "The trusted middleman for WhatsApp and Instagram commerce.",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en" className={`${geistSans.variable} font-sans`}>
-      <body className={`${geistMono.variable} antialiased bg-slate-50`}>
-        <ErrorBoundary>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem
+          disableTransitionOnChange
+        >
           <WalletProvider>
-            <Navbar />
-            <main>{children}</main>
-            <Toaster position="top-center" expand={true} richColors />
+            <div className="relative flex min-h-screen flex-col">
+              <Navbar />
+              <main className="flex-1">{children}</main>
+            </div>
+            <Toaster position="bottom-right" className="italic-none" />
           </WalletProvider>
-        </ErrorBoundary>
+        </ThemeProvider>
       </body>
     </html>
   );

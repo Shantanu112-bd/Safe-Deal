@@ -1,119 +1,124 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { 
-  WalletState, 
-  WalletType, 
-  checkBlocklist, 
-  runFraudCheck, 
-  getUsdcBalance, 
-  formatINR,
-  connectFreighter,
-  connectAlbedo
-} from '@/lib/wallet';
+  connectFreighter, 
+  connectAlbedo, 
+  getBalances, 
+  WalletType,
+  signTransaction as signTx
+} from "@/lib/wallet";
+import { toast } from "sonner";
 
-interface WalletContextType extends WalletState {
-  connect: (type: WalletType) => Promise<void>;
+interface WalletContextType {
+  publicKey: string | null;
+  isConnected: boolean;
+  xlmBalance: string;
+  usdcBalance: string;
+  walletType: WalletType;
+  connectFreighter: () => Promise<void>;
+  connectAlbedo: () => Promise<void>;
   disconnect: () => void;
   refreshBalance: () => Promise<void>;
-  loading: boolean;
-  error: string | null;
+  signTransaction: (xdr: string) => Promise<string>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
-export const WalletProvider = ({ children }: { children: ReactNode }) => {
-  const [state, setState] = useState<WalletState>({
-    address: null,
-    type: null,
-    connected: false,
-    balance: "0.00",
-    inrEquivalent: "0.00",
-    riskScore: null,
-    isBlocked: false,
-    hasUsdcTrustline: true,
-    isNewSeller: false,
-  });
+export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [publicKey, setPublicKey] = useState<string | null>(null);
+  const [walletType, setWalletType] = useState<WalletType>(null);
+  const [xlmBalance, setXlmBalance] = useState("0");
+  const [usdcBalance, setUsdcBalance] = useState("0");
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const isConnected = !!publicKey;
 
-  const connect = async (type: WalletType) => {
-    setLoading(true);
-    setError(null);
+  const refreshBalance = useCallback(async () => {
+    if (publicKey) {
+      const balances = await getBalances(publicKey);
+      setXlmBalance(balances.xlmBalance);
+      setUsdcBalance(balances.usdcBalance);
+    }
+  }, [publicKey]);
+
+  useEffect(() => {
+    // Load local storage session
+    const storedKey = localStorage.getItem("safedeal_pubkey");
+    const storedType = localStorage.getItem("safedeal_wallet_type") as WalletType;
+    
+    if (storedKey && storedType) {
+      setPublicKey(storedKey);
+      setWalletType(storedType);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (publicKey) {
+      refreshBalance();
+      // Auto refresh every 30 seconds
+      const interval = setInterval(refreshBalance, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [publicKey, refreshBalance]);
+
+  const handleConnectFreighter = async () => {
     try {
-      let address: string | null = null;
-      if (type === 'freighter') {
-        address = await connectFreighter();
-      } else if (type === 'albedo') {
-        address = await connectAlbedo();
-      }
+      const { publicKey, walletType } = await connectFreighter();
+      setPublicKey(publicKey);
+      setWalletType(walletType);
+      localStorage.setItem("safedeal_pubkey", publicKey);
+      localStorage.setItem("safedeal_wallet_type", walletType);
+      document.cookie = `safedeal_pubkey=${publicKey}; path=/; max-age=604800; samesite=lax`;
+      toast.success("Wallet connected via Freighter");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to connect Freighter");
+    }
+  };
 
-      if (address) {
-        // 1. Check Blocklist
-        if (checkBlocklist(address)) {
-          setState(prev => ({ ...prev, isBlocked: true, address, connected: true, type }));
-          setLoading(false);
-          return;
-        }
-
-        // 2. Run Silent Fraud Check
-        const riskScore = await runFraudCheck(address);
-
-        // 3. Check Trustline and Balance
-        const { balance, hasTrustline } = await getUsdcBalance(address);
-
-        // 4. Mock Seller Status
-        const isNewSeller = address.includes("NEW"); // Mock logic
-
-        setState({
-          address,
-          type,
-          connected: true,
-          balance,
-          inrEquivalent: formatINR(balance),
-          riskScore,
-          isBlocked: false,
-          hasUsdcTrustline: hasTrustline,
-          isNewSeller
-        });
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to connect wallet";
-      setError(message);
-    } finally {
-      setLoading(false);
+  const handleConnectAlbedo = async () => {
+    try {
+      const { publicKey, walletType } = await connectAlbedo();
+      setPublicKey(publicKey);
+      setWalletType(walletType);
+      localStorage.setItem("safedeal_pubkey", publicKey);
+      localStorage.setItem("safedeal_wallet_type", walletType);
+      document.cookie = `safedeal_pubkey=${publicKey}; path=/; max-age=604800; samesite=lax`;
+      toast.success("Wallet connected via Albedo");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to connect Albedo");
     }
   };
 
   const disconnect = () => {
-    setState({
-      address: null,
-      type: null,
-      connected: false,
-      balance: "0.00",
-      inrEquivalent: "0.00",
-      riskScore: null,
-      isBlocked: false,
-      hasUsdcTrustline: true,
-      isNewSeller: false,
-    });
+    setPublicKey(null);
+    setWalletType(null);
+    setXlmBalance("0");
+    setUsdcBalance("0");
+    localStorage.removeItem("safedeal_pubkey");
+    localStorage.removeItem("safedeal_wallet_type");
+    document.cookie = "safedeal_pubkey=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    toast.info("Wallet disconnected");
   };
 
-  const refreshBalance = async () => {
-    if (state.address) {
-      const { balance, hasTrustline } = await getUsdcBalance(state.address);
-      setState(prev => ({
-        ...prev,
-        balance,
-        inrEquivalent: formatINR(balance),
-        hasUsdcTrustline: hasTrustline
-      }));
-    }
+  const signTransaction = async (xdr: string) => {
+    return await signTx(xdr, walletType);
   };
 
   return (
-    <WalletContext.Provider value={{ ...state, connect, disconnect, refreshBalance, loading, error }}>
+    <WalletContext.Provider
+      value={{
+        publicKey,
+        isConnected,
+        xlmBalance,
+        usdcBalance,
+        walletType,
+        connectFreighter: handleConnectFreighter,
+        connectAlbedo: handleConnectAlbedo,
+        disconnect,
+        refreshBalance,
+        signTransaction
+      }}
+    >
       {children}
     </WalletContext.Provider>
   );
@@ -122,7 +127,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 export const useWallet = () => {
   const context = useContext(WalletContext);
   if (context === undefined) {
-    throw new Error('useWallet must be used within a WalletProvider');
+    throw new Error("useWallet must be used within a WalletProvider");
   }
   return context;
 };
