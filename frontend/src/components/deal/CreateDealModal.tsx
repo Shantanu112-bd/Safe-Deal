@@ -21,6 +21,9 @@ import { GradientButton } from "@/components/ui/gradient-button";
 import QRCode from "react-qr-code";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { createEscrowTransaction } from "@/lib/stellar";
+import { useWallet } from "@/context/WalletContext";
+import { toast } from "sonner";
 
 type Props = {
   open: boolean;
@@ -32,6 +35,7 @@ type Step = 1 | 2 | 3;
 const INR_PER_USDC = 83.5;
 
 export function CreateDealModal({ open, onClose }: Props) {
+  const { publicKey, walletType } = useWallet();
   const [step, setStep] = useState<Step>(1);
   const [itemName, setItemName] = useState("");
   const [description, setDescription] = useState("");
@@ -39,6 +43,7 @@ export function CreateDealModal({ open, onClose }: Props) {
   const [category, setCategory] = useState("Jewelry");
   const [expiryPreset, setExpiryPreset] = useState("3d");
   const [copied, setCopied] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
   const [finalDealId, setFinalDealId] = useState<string | null>(null);
   const [finalSlug, setFinalSlug] = useState<string | null>(null);
@@ -88,11 +93,32 @@ export function CreateDealModal({ open, onClose }: Props) {
   const handleNext = () => setStep(2);
   const handleBack = () => setStep(1);
 
-  const handleConfirmCreate = () => {
-    const rand = Math.floor(4000 + Math.random() * 1000);
-    setFinalDealId(`#${rand}`);
-    setFinalSlug(Math.random().toString(36).substring(2, 8));
-    setStep(3);
+  const handleConfirmCreate = async () => {
+    if (!publicKey) {
+      toast.error("Wallet not connected");
+      return;
+    }
+    
+    setIsCreating(true);
+    try {
+      const result = await createEscrowTransaction(
+        publicKey,
+        parsedAmount,
+        expiryHours,
+        walletType
+      );
+      
+      if (result.success) {
+        setFinalDealId(`#${result.dealId}`);
+        setFinalSlug(Math.random().toString(36).substring(2, 8));
+        setStep(3);
+        toast.success("Deal committed to Stellar blockchain!");
+      }
+    } catch (error) {
+      toast.error("Failed to create deal on-chain.");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const shareText = `Hi! I've created a SafeDeal payment link for your order. Your payment will be secured in escrow until you confirm delivery. Pay here: ${dealUrl}`;
@@ -300,7 +326,14 @@ export function CreateDealModal({ open, onClose }: Props) {
                          <ArrowLeft className="inline-block mr-2 size-3.5" />
                          Back
                       </button>
-                      <GradientButton className="flex-[2] rounded-2xl py-4 font-black uppercase tracking-widest text-xs" onClick={handleConfirmCreate}>
+                      <GradientButton 
+                        className="flex-[2] rounded-2xl py-4 font-black uppercase tracking-widest text-xs" 
+                        onClick={handleConfirmCreate}
+                        disabled={isCreating}
+                      >
+                         {isCreating ? (
+                            <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                         ) : null}
                          Confirm & Create Deal
                       </GradientButton>
                    </div>

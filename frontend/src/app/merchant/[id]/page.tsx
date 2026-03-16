@@ -180,6 +180,40 @@ export default function MerchantPage({ params }: { params: { id: string } }) {
           </div>
         </div>
 
+        {/* REPUTATION BREAKDOWN */}
+        <div className="mt-8 rounded-[2.5rem] bg-white p-8 border border-slate-100 shadow-sm italic-none">
+          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-6 italic-none">Reputation Breakdown</h4>
+          <div className="space-y-6 italic-none">
+            {[
+              { label: "Delivery Speed", score: MERCHANT_DATA.reputation.delivery },
+              { label: "Item Accuracy", score: MERCHANT_DATA.reputation.accuracy },
+              { label: "Communication", score: MERCHANT_DATA.reputation.communication },
+            ].map((rep, i) => (
+              <div key={i} className="flex items-center justify-between italic-none">
+                <span className="text-xs font-black text-slate-900 italic-none">{rep.label}</span>
+                <div className="flex gap-1 italic-none">
+                  {[...Array(5)].map((_, s) => (
+                    <Star key={s} className={cn("size-3 italic-none", s < rep.score ? "fill-orange-400 text-orange-400" : "text-slate-200")} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* AI VERIFICATION SECTION */}
+        <div className="mt-8 rounded-[2.5rem] bg-emerald-50 border border-emerald-100 p-8 flex items-start gap-4 italic-none">
+           <div className="size-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/20 italic-none">
+              <ShieldCheck className="size-6" />
+           </div>
+           <div className="italic-none">
+              <h4 className="text-sm font-black text-slate-900 italic-none">AI Identity Verification</h4>
+              <p className="text-xs font-bold text-slate-500 mt-1 leading-relaxed italic-none">
+                Identity verified via <span className="text-emerald-600 font-black italic-none underline underline-offset-4 decoration-emerald-200">SafeDeal Shield™</span> and government-issued documents on May 12, 2024. Bio-metric matching score: 98.4%.
+              </p>
+           </div>
+        </div>
+
         {/* CONTENT TABS */}
         <div className="mt-12 space-y-8 italic-none">
           <div className="flex gap-4 border-b border-slate-200">

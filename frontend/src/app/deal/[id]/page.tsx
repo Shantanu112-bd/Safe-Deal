@@ -26,6 +26,10 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { 
+  lockPayment, 
+  confirmDelivery as confirmOnChain 
+} from "@/lib/stellar";
+import { 
   Card, 
   CardContent, 
   CardHeader, 
@@ -59,14 +63,13 @@ const DEAL_DATA = {
 };
 
 export default function BuyerPaymentPage({ params }: { params: { id: string } }) {
-  const { isConnected } = useWallet();
-  const connected = isConnected; // Alias for internal use
-  console.log("Loading deal ID:", params.id);
+  const { isConnected, walletType, fraudScore, fraudLevel } = useWallet();
+  const connected = isConnected; 
   
-  // Mock security features (These will be implemented via contract calls later)
-  const isBlocked = false;
-  const riskScore = 12; // Low risk
-  const hasUsdcTrustline = true;
+  // Real security features
+  const isBlocked = fraudLevel === "Blocked";
+  const riskScore = fraudScore;
+  const hasUsdcTrustline = true; // Simplified for demo
 
   const [step, setStep] = useState<PageStep>("pay");
   const [loading, setLoading] = useState(true);
@@ -91,17 +94,30 @@ export default function BuyerPaymentPage({ params }: { params: { id: string } })
     return `${h}h ${m}m ${s}s`;
   };
 
-  const handlePay = () => {
+  const handlePay = async () => {
     setStep("locking");
-    setTimeout(() => {
-      setStep("success");
-      toast.success("Payment locked in escrow!");
-    }, 2000);
+    try {
+      const result = await lockPayment(params.id, DEAL_DATA.amountUSDC, walletType);
+      if (result.success) {
+        setStep("success");
+        toast.success("Payment locked in escrow!");
+      }
+    } catch (error) {
+      setStep("pay");
+      toast.error("Stellar transaction failed. Check your wallet.");
+    }
   };
 
-  const handleConfirmDelivery = () => {
-    setStep("released");
-    toast.success("Funds released to seller. Thank you!");
+  const handleConfirmDelivery = async () => {
+    try {
+      const result = await confirmOnChain(params.id, walletType);
+      if (result.success) {
+        setStep("released");
+        toast.success("Funds released to seller. Thank you!");
+      }
+    } catch (error) {
+      toast.error("Failed to release funds on-chain.");
+    }
   };
 
   const handleDispute = () => {

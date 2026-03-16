@@ -8,6 +8,7 @@ import {
   WalletType,
   signTransaction as signTx
 } from "@/lib/wallet";
+import { checkFraudScore } from "@/lib/stellar";
 import { toast } from "sonner";
 
 interface WalletContextType {
@@ -15,6 +16,8 @@ interface WalletContextType {
   isConnected: boolean;
   xlmBalance: string;
   usdcBalance: string;
+  fraudScore: number;
+  fraudLevel: string;
   walletType: WalletType;
   connectFreighter: () => Promise<void>;
   connectAlbedo: () => Promise<void>;
@@ -30,6 +33,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [walletType, setWalletType] = useState<WalletType>(null);
   const [xlmBalance, setXlmBalance] = useState("0");
   const [usdcBalance, setUsdcBalance] = useState("0");
+  const [fraudScore, setFraudScore] = useState(0);
+  const [fraudLevel, setFraudLevel] = useState("Unknown");
 
   const isConnected = !!publicKey;
 
@@ -38,6 +43,11 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const balances = await getBalances(publicKey);
       setXlmBalance(balances.xlmBalance);
       setUsdcBalance(balances.usdcBalance);
+      
+      // Perform silent AI fraud check
+      const fraud = await checkFraudScore(publicKey);
+      setFraudScore(fraud.score);
+      setFraudLevel(fraud.level);
     }
   }, [publicKey]);
 
@@ -70,6 +80,13 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       localStorage.setItem("safedeal_wallet_type", walletType);
       document.cookie = `safedeal_pubkey=${publicKey}; path=/; max-age=604800; samesite=lax`;
       toast.success("Wallet connected via Freighter");
+      
+      // Initial fraud check
+      const fraud = await checkFraudScore(publicKey);
+      if (fraud.level === "Blocked") {
+        toast.error("Wallet blocked due to high risk score");
+        disconnect();
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to connect Freighter";
       toast.error(message);
@@ -85,6 +102,13 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       localStorage.setItem("safedeal_wallet_type", walletType);
       document.cookie = `safedeal_pubkey=${publicKey}; path=/; max-age=604800; samesite=lax`;
       toast.success("Wallet connected via Albedo");
+
+      // Initial fraud check
+      const fraud = await checkFraudScore(publicKey);
+      if (fraud.level === "Blocked") {
+        toast.error("Wallet blocked due to high risk score");
+        disconnect();
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to connect Albedo";
       toast.error(message);
@@ -96,6 +120,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setWalletType(null);
     setXlmBalance("0");
     setUsdcBalance("0");
+    setFraudScore(0);
+    setFraudLevel("Unknown");
     localStorage.removeItem("safedeal_pubkey");
     localStorage.removeItem("safedeal_wallet_type");
     document.cookie = "safedeal_pubkey=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
@@ -113,6 +139,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         isConnected,
         xlmBalance,
         usdcBalance,
+        fraudScore,
+        fraudLevel,
         walletType,
         connectFreighter: handleConnectFreighter,
         connectAlbedo: handleConnectAlbedo,
