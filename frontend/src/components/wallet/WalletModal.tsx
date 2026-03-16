@@ -10,11 +10,10 @@ import {
   ShieldAlert, 
   ExternalLink,
   ChevronRight,
-  Info,
   Layers,
   LogOut
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { GradientButton } from "@/components/ui/gradient-button";
 import { cn } from "@/lib/utils";
 

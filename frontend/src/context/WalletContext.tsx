@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { 
   WalletState, 
   WalletType, 
@@ -78,8 +78,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
           isNewSeller
         });
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to connect wallet");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to connect wallet";
+      setError(message);
     } finally {
       setLoading(false);
     }

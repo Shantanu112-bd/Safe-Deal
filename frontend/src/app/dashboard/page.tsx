@@ -1,29 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Shield,
   LayoutDashboard,
   ShoppingBag,
   History,
   User,
-  Settings,
   Plus,
-  Link2,
-  Eye,
-  X,
-  ChevronRight,
 } from "lucide-react";
 import { GradientButton } from "@/components/ui/gradient-button";
 import { CreateDealModal } from "@/components/deal/CreateDealModal";
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-} from "recharts";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 type DealStatus =
   | "Waiting for Payment"
@@ -61,15 +50,6 @@ const activeDeals: DealCard[] = [
     status: "Payment Locked",
     createdAgo: "4 hours ago",
     expiresIn: "3 days 18 hours",
-  },
-  {
-    id: "4821",
-    title: "Vintage Camera Strap",
-    buyer: "GB8K...PQ9Z",
-    amount: "950 USDC",
-    status: "Shipped",
-    createdAgo: "8 hours ago",
-    expiresIn: "2 days 6 hours",
   },
 ];
 
@@ -115,418 +95,149 @@ const statusStyles: Record<
   },
 };
 
-const earnings7d = [
-  { day: "Mon", amount: 240 },
-  { day: "Tue", amount: 320 },
-  { day: "Wed", amount: 180 },
-  { day: "Thu", amount: 420 },
-  { day: "Fri", amount: 360 },
-  { day: "Sat", amount: 510 },
-  { day: "Sun", amount: 295 },
-];
-
-const recentActivity = [
-  {
-    id: "activity-1",
-    title: "Deal #4821 completed",
-    description: "₹3,200 received",
-    time: "2h ago",
-  },
-  {
-    id: "activity-2",
-    title: "Deal #4820 payment locked",
-    description: "₹1,800 secured",
-    time: "5h ago",
-  },
-  {
-    id: "activity-3",
-    title: "Deal #4819 dispute resolved",
-    description: "₹2,400 released",
-    time: "1d ago",
-  },
-];
-
 export default function Dashboard() {
   const [showCreate, setShowCreate] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 p-8 space-y-8">
+        <div className="grid grid-cols-4 gap-4">
+           <Skeleton className="h-32 rounded-2xl" />
+           <Skeleton className="h-32 rounded-2xl" />
+           <Skeleton className="h-32 rounded-2xl" />
+           <Skeleton className="h-32 rounded-2xl" />
+        </div>
+        <Skeleton className="h-96 rounded-2xl" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20 lg:pb-0">
       <div className="flex min-h-screen">
         {/* Sidebar (desktop) */}
-        <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white px-4 py-6 lg:flex">
+        <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white px-4 py-6 lg:flex italic-none">
           <div className="flex items-center gap-2 px-2">
-            <span className="inline-flex size-9 items-center justify-center rounded-xl bg-[#0f172a] text-white">
+            <span className="inline-flex size-9 items-center justify-center rounded-xl bg-slate-900 shadow-lg text-white italic-none">
               <Shield className="size-5" />
             </span>
             <div>
-              <p className="text-sm font-semibold text-[#0f172a]">SafeDeal</p>
-              <p className="text-xs text-slate-500">Merchant</p>
+              <p className="text-sm font-black text-slate-900 italic-none tracking-tight">SafeDeal</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest italic-none">Merchant Hub</p>
             </div>
           </div>
 
-          <nav className="mt-8 flex-1 space-y-1 text-sm font-medium">
-            <a
-              href="#"
-              className="flex items-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-white"
-            >
+          <nav className="mt-8 flex-1 space-y-1 text-sm font-bold italic-none">
+            <a href="#" className="flex items-center gap-2 rounded-xl bg-slate-900 px-3 py-2.5 text-white italic-none">
               <LayoutDashboard className="size-4" />
               <span>Dashboard</span>
             </a>
-            <a
-              href="#"
-              className="flex items-center gap-2 rounded-xl px-3 py-2 text-slate-600 hover:bg-slate-100"
-            >
+            <a href="#" className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-slate-500 hover:bg-slate-50 italic-none">
               <ShoppingBag className="size-4" />
-              <span>My Deals</span>
+              <span>Orders</span>
             </a>
-            <a
-              href="#"
-              className="flex items-center gap-2 rounded-xl px-3 py-2 text-slate-600 hover:bg-slate-100"
-            >
+            <a href="#" className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-slate-500 hover:bg-slate-50 italic-none">
               <History className="size-4" />
-              <span>History</span>
-            </a>
-            <a
-              href="#"
-              className="flex items-center gap-2 rounded-xl px-3 py-2 text-slate-600 hover:bg-slate-100"
-            >
-              <User className="size-4" />
-              <span>My Profile</span>
-            </a>
-            <a
-              href="#"
-              className="flex items-center gap-2 rounded-xl px-3 py-2 text-slate-600 hover:bg-slate-100"
-            >
-              <Settings className="size-4" />
-              <span>Settings</span>
+              <span>Payments</span>
             </a>
           </nav>
-
-          <div className="mt-4 space-y-2 border-t border-slate-200 pt-4 text-xs">
-            <div className="flex items-center justify-between rounded-xl bg-amber-50 px-3 py-2 text-amber-800">
-              <span className="font-semibold">Stellar Testnet</span>
-              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold">
-                ORANGE
-              </span>
-            </div>
-            <div className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">
-              <p className="text-[11px] uppercase tracking-wide text-slate-400">
-                Connected Wallet
-              </p>
-              <p className="mt-1 font-mono text-xs">GCKF...WXQR</p>
-            </div>
-          </div>
         </aside>
 
         {/* Main content */}
-        <div className="flex-1">
-          {/* Top bar */}
-          <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
-            <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-              <div className="flex items-center gap-2 lg:hidden">
-                <span className="inline-flex size-8 items-center justify-center rounded-lg bg-[#0f172a] text-white">
-                  <Shield className="size-4" />
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-[#0f172a]">
-                    SafeDeal
-                  </p>
-                  <p className="text-xs text-slate-500">Merchant dashboard</p>
-                </div>
-              </div>
-
-              <div className="hidden lg:block">
-                <h1 className="text-lg font-semibold text-[#0f172a]">
-                  Dashboard
-                </h1>
-                <p className="text-xs text-slate-500">
-                  Overview of your deals and earnings
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="hidden text-right sm:block">
-                  <p className="text-xs font-medium text-slate-500">
-                    USDC Balance
-                  </p>
-                  <p className="text-sm font-semibold text-[#0f172a]">
-                    248.50 USDC
-                  </p>
-                </div>
-                <GradientButton
-                  className="min-w-0 rounded-xl px-4 py-2 text-sm"
-                  onClick={() => setShowCreate(true)}
-                >
-                  <Plus className="mr-1 size-4" />
-                  New Deal
-                </GradientButton>
-              </div>
+        <div className="flex-1 italic-none">
+          <header className="sticky top-0 z-20 border-b border-slate-100 bg-white/80 backdrop-blur italic-none">
+            <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+              <h1 className="text-lg font-black text-slate-900 italic-none">Dashboard</h1>
+              <GradientButton
+                className="rounded-xl px-5 py-2 text-sm font-bold italic-none"
+                onClick={() => setShowCreate(true)}
+              >
+                <Plus className="mr-1.5 size-4" />
+                Create Deal
+              </GradientButton>
             </div>
           </header>
 
-          <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+          <main className="mx-auto max-w-6xl px-6 py-8 italic-none">
             {/* Stats row */}
-            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Active Deals
-                </p>
-                <p className="mt-2 text-2xl font-bold text-[#0f172a]">3</p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Deals currently in progress
-                </p>
-              </article>
-              <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Pending Payment
-                </p>
-                <p className="mt-2 text-2xl font-bold text-[#0f172a]">
-                  ₹12,400
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Across all open deals
-                </p>
-              </article>
-              <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Completed This Month
-                </p>
-                <p className="mt-2 text-2xl font-bold text-[#0f172a]">
-                  47
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  With 0% fraud rate
-                </p>
-              </article>
-              <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Total Earned
-                </p>
-                <p className="mt-2 text-2xl font-bold text-[#0f172a]">
-                  ₹1,24,000
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Lifetime via SafeDeal
-                </p>
-              </article>
+            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 italic-none">
+              {[
+                { label: "Active Deals", value: "3", sub: "Monitoring" },
+                { label: "Pending", value: "₹12,400", sub: "In Escrow" },
+                { label: "Reliability", value: "100%", sub: "Success Rate" },
+                { label: "Revenue", value: "₹1.24L", sub: "Total Volume" },
+              ].map((stat) => (
+                <article key={stat.label} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm italic-none">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic-none">{stat.label}</p>
+                  <p className="mt-2 text-2xl font-black text-slate-900 italic-none">{stat.value}</p>
+                  <p className="mt-1 text-xs font-bold text-emerald-600 italic-none">{stat.sub}</p>
+                </article>
+              ))}
             </section>
 
-            {/* Main grid */}
-            <section className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)]">
-              {/* Active deals + chart */}
-              <div className="space-y-6">
-                <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <h2 className="text-sm font-semibold text-[#0f172a]">
-                        Active Deals
-                      </h2>
-                      <p className="text-xs text-slate-500">
-                        Manage your open and in-progress deals
-                      </p>
+            <div className="mt-8 grid gap-6 lg:grid-cols-3 italic-none">
+               <div className="lg:col-span-2 space-y-6 italic-none">
+                  <article className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm italic-none">
+                    <h2 className="text-sm font-black uppercase tracking-widest text-slate-900 italic-none">In-Progress Deals</h2>
+                    <div className="mt-6 space-y-4">
+                       {activeDeals.map((deal) => {
+                          const style = statusStyles[deal.status];
+                          return (
+                            <div key={deal.id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100 italic-none">
+                               <div>
+                                  <p className="font-bold text-slate-900 text-sm">#{deal.id} {deal.title}</p>
+                                  <p className="text-xs text-slate-400 font-bold uppercase mt-1 italic-none">{deal.amount}</p>
+                               </div>
+                               <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest italic-none", style.badgeClass)}>
+                                  {deal.status}
+                               </span>
+                            </div>
+                          );
+                       })}
                     </div>
-                    <p className="text-xs font-medium text-slate-500">
-                      3 active
+                  </article>
+               </div>
+
+               <article className="rounded-3xl bg-slate-900 p-8 text-white shadow-2xl shadow-slate-900/20 italic-none flex flex-col justify-between">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400 italic-none">Stellar Network</p>
+                    <h3 className="mt-2 text-xl font-black italic-none">Production Ready</h3>
+                    <p className="mt-4 text-sm text-slate-400 leading-relaxed italic-none">
+                      Your deals are secured by the merchant-escrow-v1 contract on Stellar Testnet.
                     </p>
                   </div>
-
-                  <div className="mt-4 space-y-3">
-                    {activeDeals.map((deal) => {
-                      const status = statusStyles[deal.status];
-                      return (
-                        <div
-                          key={deal.id}
-                          className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 hover:bg-slate-50"
-                        >
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div>
-                              <p className="text-sm font-semibold text-[#0f172a]">
-                                🛍️ {deal.title}
-                              </p>
-                              <p className="mt-1 text-xs text-slate-500">
-                                Buyer:{" "}
-                                <span className="font-mono">{deal.buyer}</span>
-                              </p>
-                              <p className="mt-1 text-xs text-slate-500">
-                                Amount: {deal.amount}
-                              </p>
-                              <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
-                                <span>Created: {deal.createdAgo}</span>
-                                <span>Expires: {deal.expiresIn}</span>
-                              </div>
-                            </div>
-
-                            <div className="flex flex-col items-end gap-3">
-                              <span
-                                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${status.badgeClass}`}
-                              >
-                                <span
-                                  className={`size-2 rounded-full ${status.dotClass}`}
-                                />
-                                <span className={status.textClass}>
-                                  {status.label}
-                                </span>
-                              </span>
-
-                              <div className="flex gap-2">
-                                <GradientButton
-                                  variant="variant"
-                                  className="min-w-0 rounded-lg px-3 py-2 text-xs"
-                                >
-                                  <Link2 className="mr-1 size-3.5" />
-                                  Share Link
-                                </GradientButton>
-                                <GradientButton className="min-w-0 rounded-lg px-3 py-2 text-xs">
-                                  <Eye className="mr-1 size-3.5" />
-                                  View
-                                </GradientButton>
-                                <button className="inline-flex items-center rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100">
-                                  <X className="mr-1 size-3" />
-                                  Cancel
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </article>
-
-                <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-sm font-semibold text-[#0f172a]">
-                        Earnings (last 7 days)
-                      </h2>
-                      <p className="text-xs text-slate-500">
-                        Daily earnings in USDC
-                      </p>
-                    </div>
-                    <p className="text-xs font-medium text-slate-500">
-                      Total: 2,325 USDC
-                    </p>
-                  </div>
-                  <div className="mt-4 h-52">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={earnings7d}>
-                        <XAxis
-                          dataKey="day"
-                          tickLine={false}
-                          axisLine={false}
-                          tick={{ fontSize: 11, fill: "#64748b" }}
-                        />
-                        <YAxis
-                          tickLine={false}
-                          axisLine={false}
-                          tick={{ fontSize: 11, fill: "#64748b" }}
-                        />
-                        <Tooltip
-                          cursor={{ fill: "rgba(148, 163, 184, 0.12)" }}
-                          contentStyle={{
-                            borderRadius: 12,
-                            border: "1px solid #e2e8f0",
-                            boxShadow: "0 18px 45px rgba(15,23,42,0.14)",
-                            fontSize: 12,
-                          }}
-                          formatter={(value) =>
-                            value !== undefined
-                              ? [`${value as number} USDC`, "Earnings"]
-                              : ["", ""]
-                          }
-                        />
-                        <Bar
-                          dataKey="amount"
-                          radius={[8, 8, 4, 4]}
-                          fill="#10b981"
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </article>
-              </div>
-
-              {/* Recent activity */}
-              <aside className="space-y-4">
-                <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <h2 className="text-sm font-semibold text-[#0f172a]">
-                    Recent Activity
-                  </h2>
-                  <p className="text-xs text-slate-500">
-                    Latest updates from your deals
-                  </p>
-                  <div className="mt-4 space-y-3 text-sm">
-                    {recentActivity.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-start justify-between gap-3 rounded-xl bg-slate-50 px-3 py-3"
-                      >
-                        <div>
-                          <p className="font-medium text-[#0f172a]">
-                            {item.title}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {item.description}
-                          </p>
-                        </div>
-                        <span className="shrink-0 text-xs text-slate-400">
-                          {item.time}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </article>
-
-                <article className="rounded-2xl border border-slate-200 bg-slate-900 p-5 text-white shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-emerald-300">
-                    Stellar escrow
-                  </p>
-                  <p className="mt-2 text-sm font-semibold">
-                    Every deal is protected by on-chain escrow and AI fraud
-                    checks.
-                  </p>
-                  <p className="mt-2 text-xs text-slate-300">
-                    Create a SafeDeal link for every new buyer and share it
-                    directly in WhatsApp, Instagram, or Telegram.
-                  </p>
-                  <GradientButton
-                    className="mt-4 w-full justify-center rounded-xl text-sm"
-                    onClick={() => setShowCreate(true)}
-                  >
-                    <ChevronRight className="mr-1 size-4" />
-                    Create New Deal
+                  <GradientButton variant="variant" className="mt-8 w-full rounded-xl py-3 text-xs font-black uppercase italic-none">
+                     View Contract
                   </GradientButton>
-                </article>
-              </aside>
-            </section>
-          </main>
-
-          {/* Bottom tab bar (mobile) */}
-          <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-4 py-2 shadow-[0_-4px_20px_rgba(15,23,42,0.08)] lg:hidden">
-            <div className="mx-auto grid max-w-md grid-cols-4 gap-2 text-xs font-medium">
-              <button className="flex flex-col items-center gap-1 text-[#0f172a]">
-                <LayoutDashboard className="size-4" />
-                <span>Dashboard</span>
-              </button>
-              <button className="flex flex-col items-center gap-1 text-slate-500">
-                <ShoppingBag className="size-4" />
-                <span>Deals</span>
-              </button>
-              <button className="flex flex-col items-center gap-1 text-slate-500">
-                <History className="size-4" />
-                <span>History</span>
-              </button>
-              <button className="flex flex-col items-center gap-1 text-slate-500">
-                <User className="size-4" />
-                <span>Profile</span>
-              </button>
+               </article>
             </div>
-          </nav>
+          </main>
         </div>
       </div>
 
       <CreateDealModal open={showCreate} onClose={() => setShowCreate(false)} />
+      
+      {/* Mobile Bottom Tabs */}
+      <nav className="fixed bottom-0 inset-x-0 bg-white/80 backdrop-blur-xl border-t border-slate-100 flex justify-around p-4 lg:hidden italic-none">
+         <button className="text-slate-900 italic-none flex flex-col items-center gap-1">
+            <LayoutDashboard className="size-5" />
+            <span className="text-[10px] font-black uppercase">Home</span>
+         </button>
+         <button className="text-slate-400 italic-none flex flex-col items-center gap-1" onClick={() => setShowCreate(true)}>
+            <Plus className="size-5" />
+            <span className="text-[10px] font-black uppercase">Create</span>
+         </button>
+         <button className="text-slate-400 italic-none flex flex-col items-center gap-1">
+            <User className="size-5" />
+            <span className="text-[10px] font-black uppercase">Settings</span>
+         </button>
+      </nav>
     </div>
   );
 }
-

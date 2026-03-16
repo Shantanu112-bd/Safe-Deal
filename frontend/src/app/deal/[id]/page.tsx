@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
-  Shield, 
   Lock, 
   Package, 
   CheckCircle2, 
@@ -10,19 +9,19 @@ import {
   Star, 
   Clock, 
   MessageSquare, 
-  Wallet, 
-  ChevronRight,
   Copy,
   Smartphone,
   ShieldCheck,
   ShieldAlert,
-  Undo2
+  Timer
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GradientButton } from "@/components/ui/gradient-button";
 import { cn } from "@/lib/utils";
 import { useWallet } from "@/context/WalletContext";
 import { WalletConnect } from "@/components/wallet/WalletConnect";
+import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Types
 type PageStep = "pay" | "locking" | "success" | "confirm_delivery" | "dispute_opened" | "released";
@@ -48,22 +47,72 @@ const DEAL_DATA = {
 
 export default function DealPage({ params }: { params: { id: string } }) {
   const dealId = params.id;
-  const { connected, address, balance, inrEquivalent, isBlocked, riskScore, hasUsdcTrustline } = useWallet();
+  const { connected, balance, isBlocked, riskScore, hasUsdcTrustline } = useWallet();
   const [step, setStep] = useState<PageStep>("pay");
   const [copied, setCopied] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [timeLeft, setTimeLeft] = useState(172800); // 48 hours in seconds
+
+  useEffect(() => {
+    // Simulate initial fetch
+    const timer = setTimeout(() => setLoading(false), 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (timeLeft > 0) {
+      const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+      return () => clearInterval(timer);
+    }
+  }, [timeLeft]);
+
+  const formatTime = (seconds: number) => {
+    const d = Math.floor(seconds / (3600 * 24));
+    const h = Math.floor((seconds % (3600 * 24)) / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    return `${d}d ${h}h ${m}m`;
+  };
 
   const handlePay = () => {
     setStep("locking");
     setTimeout(() => {
       setStep("success");
+      toast.success("Payment locked — safe to ship!", {
+        description: "Your funds are now secured in the Stellar escrow contract."
+      });
     }, 2500);
+  };
+
+  const handleRelease = () => {
+    setStep("released");
+    toast.success("Payment released to your wallet!", {
+      description: "Seller has been successfully paid."
+    });
+  };
+
+  const handleDispute = () => {
+    setStep("dispute_opened");
+    toast.error("Dispute raised — funds frozen", {
+      description: "SafeDeal compliance team will review the case."
+    });
   };
 
   const copyLink = () => {
     navigator.clipboard.writeText(`safedeal.app/deal/${dealId}/confirm`);
     setCopied(true);
+    toast.info("Link copied to clipboard");
     setTimeout(() => setCopied(false), 2000);
   };
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-lg px-6 pt-12 space-y-8">
+        <Skeleton className="h-64 w-full rounded-3xl" />
+        <Skeleton className="h-48 w-full rounded-3xl" />
+        <Skeleton className="h-12 w-3/4 mx-auto rounded-full" />
+      </div>
+    );
+  }
 
   // Border color based on seller status
   const getBorderColor = (status: SellerStatus) => {
@@ -76,26 +125,7 @@ export default function DealPage({ params }: { params: { id: string } }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans selection:bg-emerald-100 italic-none">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
-        <div className="mx-auto flex h-16 max-w-lg items-center justify-between px-6">
-          <div className="flex items-center gap-2.5">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-emerald-600 shadow-lg shadow-emerald-600/20 text-white">
-              <Shield className="size-5 fill-emerald-100/20" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold leading-tight tracking-tight text-slate-900">SafeDeal</h1>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600">Secure Payment</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-700 ring-1 ring-emerald-100">
-            <ShieldCheck className="size-3.5" />
-            ESCROW ACTIVE
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans italic-none">
       <main className="mx-auto max-w-lg px-6 pb-24 pt-8">
         <AnimatePresence mode="wait">
           {step === "locking" ? (
@@ -112,8 +142,8 @@ export default function DealPage({ params }: { params: { id: string } }) {
                   <Lock className="size-8 text-emerald-600" />
                 </div>
               </div>
-              <h2 className="mt-8 text-2xl font-bold text-slate-900">Locking Payment...</h2>
-              <p className="mt-2 text-slate-500">Securing 24.00 USDC on Stellar Network</p>
+              <h2 className="mt-8 text-2xl font-black text-slate-900">Locking Escrow...</h2>
+              <p className="mt-2 text-slate-500 font-medium">Securing {DEAL_DATA.amountUSDC.toFixed(2)} USDC on Stellar</p>
             </motion.div>
           ) : (
             <motion.div
@@ -122,6 +152,12 @@ export default function DealPage({ params }: { params: { id: string } }) {
               animate={{ opacity: 1, y: 0 }}
               className="space-y-6"
             >
+              {/* COUNTDOWN TIMER BADGE */}
+              <div className="flex items-center justify-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white shadow-lg mx-auto w-fit italic-none">
+                <Timer className="size-3.5 text-emerald-400 italic-none" />
+                Escrow Auto-Refund: {formatTime(timeLeft)}
+              </div>
+
               {/* SELLER TRUST CARD */}
               <div className={cn(
                 "group relative overflow-hidden rounded-3xl border-2 bg-white p-6 transition-all duration-300",
@@ -140,42 +176,22 @@ export default function DealPage({ params }: { params: { id: string } }) {
                 </div>
 
                 <div className="mt-6 grid grid-cols-2 gap-4">
-                  <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3 transition-colors group-hover:bg-emerald-50/50">
-                    <div className="flex size-9 items-center justify-center rounded-xl bg-white text-orange-500 shadow-sm ring-1 ring-slate-100">
-                      <Star className="size-4 fill-current" />
+                  {[
+                    { label: "Rating", value: SELLER_DATA.rating, icon: Star, color: "text-orange-500" },
+                    { label: "Deals", value: SELLER_DATA.completedDeals, icon: Package, color: "text-blue-500" },
+                    { label: "Member", value: SELLER_DATA.memberSince, icon: Clock, color: "text-indigo-500" },
+                    { label: "Dispute", value: SELLER_DATA.lastDispute, icon: MessageSquare, color: "text-emerald-500" },
+                  ].map((stat, i) => (
+                    <div key={i} className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3 transition-colors group-hover:bg-emerald-50/50">
+                      <div className={cn("flex size-9 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-100 italic-none", stat.color)}>
+                        <stat.icon className="size-4 fill-current italic-none" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">{stat.label}</p>
+                        <p className="text-sm font-bold text-slate-900">{stat.value}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase">Rating</p>
-                      <p className="text-sm font-bold text-slate-900">{SELLER_DATA.rating}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3 transition-colors group-hover:bg-emerald-50/50">
-                    <div className="flex size-9 items-center justify-center rounded-xl bg-white text-blue-500 shadow-sm ring-1 ring-slate-100">
-                      <Package className="size-4" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase">Deals</p>
-                      <p className="text-sm font-bold text-slate-900">{SELLER_DATA.completedDeals}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3 transition-colors group-hover:bg-emerald-50/50">
-                    <div className="flex size-9 items-center justify-center rounded-xl bg-white text-indigo-500 shadow-sm ring-1 ring-slate-100">
-                      <Clock className="size-4" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase">Member</p>
-                      <p className="text-sm font-bold text-slate-900">{SELLER_DATA.memberSince}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3 transition-colors group-hover:bg-emerald-50/50">
-                    <div className="flex size-9 items-center justify-center rounded-xl bg-white text-emerald-500 shadow-sm ring-1 ring-slate-100">
-                      <MessageSquare className="size-4" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase">Dispute</p>
-                      <p className="text-sm font-bold text-slate-900">{SELLER_DATA.lastDispute}</p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
 
@@ -211,45 +227,20 @@ export default function DealPage({ params }: { params: { id: string } }) {
                       <Smartphone className="size-6 text-slate-300" />
                     </div>
                   </div>
-                  
-                  <div className="mt-4 flex items-center gap-2.5 rounded-xl bg-emerald-50/50 border border-emerald-100 px-4 py-3 text-xs font-semibold text-emerald-800 italic-none">
-                    <ShieldCheck className="size-4 shrink-0 text-emerald-600" />
-                    Protected by SafeDeal Escrow until you confirm delivery.
-                  </div>
                 </div>
               </div>
 
-              {/* PROTECTION INFO */}
-              <div className="grid grid-cols-1 gap-3">
-                <h4 className="px-1 text-xs font-black uppercase tracking-widest text-slate-400">Buyer Protection</h4>
-                {[
-                  { icon: Lock, color: "text-blue-500", bg: "bg-blue-50", title: "Smart Escrow", desc: "Money locked until you confirm delivery" },
-                  { icon: ShieldCheck, color: "text-emerald-500", bg: "bg-emerald-50", title: "AI Verification", desc: "Seller verified by AI fraud detection" },
-                  { icon: Undo2, color: "text-orange-500", bg: "bg-orange-50", title: "Auto-Refund", desc: "Refund if seller fails to ship order" }
-                ].map((item, i) => (
-                  <div key={i} className="flex items-start gap-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition-all hover:scale-[1.02]">
-                    <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl", item.bg, item.color)}>
-                      <item.icon className="size-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-900 italic-none">{item.title}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{item.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
               {/* PAYMENT SECTION */}
-              <div className="mt-10 rounded-3xl bg-slate-900 p-8 text-white shadow-2xl shadow-slate-900/20">
+              <div className="rounded-3xl bg-slate-900 p-8 text-white shadow-2xl shadow-slate-900/20">
                 {step === "pay" && !connected && (
                   <div className="space-y-6">
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Step 1 of 2</p>
-                      <h3 className="text-2xl font-bold">Connect Wallet</h3>
-                      <p className="text-sm text-slate-400">Select your preferred Stellar wallet to start.</p>
+                    <div className="space-y-1 text-center">
+                      <h3 className="text-2xl font-black italic-none">Secure Payment</h3>
+                      <p className="text-sm text-slate-400 italic-none">Connect wallet to lock {DEAL_DATA.amountUSDC.toFixed(2)} USDC in escrow.</p>
                     </div>
-
-                    <WalletConnect />
+                    <div className="flex justify-center italic-none">
+                      <WalletConnect />
+                    </div>
                   </div>
                 )}
 
@@ -265,46 +256,43 @@ export default function DealPage({ params }: { params: { id: string } }) {
                       </div>
                     ) : (
                       <>
-                        {riskScore !== null && riskScore > 60 && (
-                          <div className="rounded-2xl bg-orange-500/10 border border-orange-500/20 p-4 flex gap-3 text-orange-200">
-                            <AlertTriangle className="size-5 shrink-0" />
-                            <div className="text-xs leading-relaxed italic-none">
-                              <span className="font-bold block text-sm text-orange-400 mb-1 italic-none">Caution: Risk Detected</span>
-                              Your wallet has a risk score of {riskScore}. Please verify the deal details carefully.
-                            </div>
+                        <div className="space-y-4 rounded-3xl bg-white/5 p-6 ring-1 ring-white/10 italic-none">
+                          <div className="flex items-center justify-between text-xs font-bold italic-none">
+                             <div className="flex items-center gap-2 italic-none">
+                               <ShieldCheck className="size-4 text-emerald-500 italic-none" />
+                               <span className="text-emerald-400 font-black italic-none uppercase tracking-widest">Safe Analytics</span>
+                             </div>
+                             <span className="text-slate-400 italic-none">Risk Score: {riskScore}%</span>
                           </div>
-                        )}
-
-                        <div className="space-y-1">
-                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Step 2 of 2</p>
-                          <h3 className="text-2xl font-bold">Confirm Payment</h3>
-                          <div className="inline-flex items-center gap-2 mt-2 px-3 py-1 bg-white/5 rounded-full ring-1 ring-white/10 text-[10px] font-bold text-emerald-400 uppercase tracking-wider italic-none">
-                            <div className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            Connected: {address?.slice(0, 8)}...
+                          <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden italic-none">
+                             <motion.div 
+                                initial={{ width: 0 }}
+                                animate={{ width: `${riskScore}%` }}
+                                className={cn(
+                                  "h-full rounded-full italic-none",
+                                  (riskScore || 0) > 60 ? "bg-red-500" : "bg-emerald-500"
+                                )}
+                             />
                           </div>
                         </div>
 
                         <div className="space-y-4 rounded-3xl bg-white/5 p-6 ring-1 ring-white/10 italic-none">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-slate-400">Your USDC Balance</span>
+                          <div className="flex items-center justify-between text-sm italic-none">
+                            <span className="text-slate-400 italic-none">USDC Balance</span>
                             <span className="font-bold text-white italic-none">{balance} USDC</span>
                           </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-slate-400">Payment Amount</span>
-                            <span className="font-bold text-emerald-400 italic-none">-{DEAL_DATA.amountUSDC.toFixed(2)} USDC</span>
-                          </div>
-                          <div className="pt-4 mt-4 border-t border-white/5 flex items-center justify-between">
-                            <span className="text-sm font-bold">Remaining After</span>
-                            <span className="text-lg font-black text-white italic-none">{(parseFloat(balance) - DEAL_DATA.amountUSDC).toFixed(2)} USDC</span>
+                          <div className="pt-4 mt-4 border-t border-white/5 flex items-center justify-between italic-none">
+                            <span className="text-sm font-bold italic-none">Net Payable</span>
+                            <span className="text-xl font-black text-emerald-400 italic-none">{DEAL_DATA.amountUSDC.toFixed(2)} USDC</span>
                           </div>
                         </div>
 
                         <GradientButton 
                           className="w-full rounded-2xl py-6 text-lg font-black italic-none"
                           onClick={handlePay}
-                          disabled={!hasUsdcTrustline || isBlocked}
+                          disabled={!hasUsdcTrustline}
                         >
-                          {!hasUsdcTrustline ? "Add USDC Trustline First" : "Pay & Lock in Escrow"}
+                          {!hasUsdcTrustline ? "Fix Trustline to Pay" : "Lock & Secure Funds"}
                         </GradientButton>
                       </>
                     )}
@@ -317,28 +305,25 @@ export default function DealPage({ params }: { params: { id: string } }) {
                         <div className="mx-auto flex size-20 items-center justify-center rounded-full bg-emerald-600 shadow-2xl shadow-emerald-600/40 text-white">
                           <CheckCircle2 className="size-10" />
                         </div>
-                        <h3 className="text-2xl font-bold italic-none">Payment Locked Successfully!</h3>
-                        <p className="text-slate-400 text-sm italic-none">Your {DEAL_DATA.amountUSDC.toFixed(2)} USDC is secured in escrow. The seller cannot access it until you confirm delivery.</p>
+                        <h3 className="text-2xl font-black italic-none">Funds Secured!</h3>
+                        <p className="text-slate-400 text-sm">Escrow transaction success on Stellar Testnet.</p>
                      </div>
 
-                     <div className="rounded-3xl bg-white/5 p-6 space-y-4 ring-1 ring-white/10">
-                        <div className="flex justify-between items-center text-xs text-slate-500 font-bold uppercase tracking-widest">
+                     <div className="rounded-3xl bg-white/5 p-6 space-y-4 ring-1 ring-white/10 italic-none">
+                        <div className="flex justify-between items-center text-xs text-slate-500 font-bold uppercase tracking-widest italic-none">
                           <span>Deal Reference</span>
                           <span className="text-white">#{dealId}</span>
                         </div>
-                        <div className="space-y-2">
-                           <p className="text-[10px] font-bold text-slate-400 uppercase">Confirmation Link</p>
-                           <div className="flex gap-2">
-                             <div className="flex-1 rounded-xl bg-slate-900 px-4 py-3 text-xs font-mono text-emerald-400 truncate ring-1 ring-white/5">
-                                safedeal.app/deal/{dealId}/confirm
-                             </div>
-                             <button 
-                              onClick={copyLink}
-                              className="size-11 flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
-                             >
-                               {copied ? <CheckCircle2 className="size-5 text-emerald-500" /> : <Copy className="size-5" />}
-                             </button>
-                           </div>
+                        <div className="flex gap-2 italic-none">
+                          <div className="flex-1 rounded-xl bg-slate-900 px-4 py-3 text-[10px] font-mono text-emerald-400 truncate ring-1 ring-white/5 italic-none">
+                             safedeal.app/deal/{dealId}
+                          </div>
+                          <button 
+                            onClick={copyLink}
+                            className="size-11 flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition-colors italic-none"
+                          >
+                            {copied ? <CheckCircle2 className="size-5 text-emerald-500 italic-none" /> : <Copy className="size-5 italic-none" />}
+                          </button>
                         </div>
                      </div>
 
@@ -347,7 +332,7 @@ export default function DealPage({ params }: { params: { id: string } }) {
                       className="w-full rounded-2xl py-5 font-bold italic-none"
                       onClick={() => setStep("confirm_delivery")}
                     >
-                      Return to Deal
+                      Continue to Receipt
                     </GradientButton>
                    </div>
                 )}
@@ -356,18 +341,18 @@ export default function DealPage({ params }: { params: { id: string } }) {
                {/* CONFIRM DELIVERY SECTION */}
                {(step === "confirm_delivery" || step === "released" || step === "dispute_opened") && (
                 <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="rounded-3xl border-2 border-emerald-500/20 bg-white p-8 shadow-xl shadow-emerald-500/5 space-y-8"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="rounded-3xl border-2 border-emerald-500/20 bg-white p-6 md:p-8 shadow-xl space-y-8"
                 >
                   {step === "confirm_delivery" ? (
                     <>
-                      <div className="text-center space-y-3">
-                        <h3 className="text-2xl font-bold text-slate-900 italic-none">Did you receive your item?</h3>
-                        <p className="text-slate-500 text-sm">Once you confirm receipt, the funds will be released to {SELLER_DATA.name}.</p>
+                      <div className="text-center space-y-3 italic-none">
+                        <h3 className="text-2xl font-black text-slate-900 italic-none">Ready to release?</h3>
+                        <p className="text-slate-500 text-sm italic-none">Please confirm you have received the items in the described condition.</p>
                       </div>
 
-                      <div className="aspect-square w-48 mx-auto rounded-3xl bg-slate-100 overflow-hidden ring-4 ring-slate-50">
+                      <div className="aspect-square w-32 md:w-48 mx-auto rounded-3xl bg-slate-100 overflow-hidden ring-4 ring-slate-50 italic-none">
                         <img 
                           src={DEAL_DATA.image} 
                           alt={DEAL_DATA.title}
@@ -375,53 +360,41 @@ export default function DealPage({ params }: { params: { id: string } }) {
                         />
                       </div>
 
-                      <div className="grid gap-3">
+                      <div className="grid gap-3 italic-none">
                         <GradientButton 
-                          className="w-full rounded-2xl py-5 text-lg font-bold italic-none"
-                          onClick={() => setStep("released")}
+                          className="w-full rounded-2xl py-5 text-lg font-black italic-none"
+                          onClick={handleRelease}
                         >
-                          Yes, I received it — Release Payment
+                          I received it — Release Funds
                         </GradientButton>
                         <button 
-                          onClick={() => setStep("dispute_opened")}
-                          className="w-full rounded-2xl py-4 text-sm font-bold text-red-500 transition-colors hover:bg-red-50 flex items-center justify-center gap-2"
+                          onClick={handleDispute}
+                          className="w-full rounded-2xl py-4 text-xs font-black uppercase tracking-widest text-red-500 transition-all hover:bg-red-50 flex items-center justify-center gap-2 italic-none"
                         >
-                          <AlertTriangle className="size-4" />
-                          No, I have a problem — Open Dispute
+                          <AlertTriangle className="size-4 italic-none" />
+                          Open Dispute
                         </button>
                       </div>
                     </>
                   ) : step === "released" ? (
-                    <div className="text-center space-y-6 py-6 transition-all italic-none">
+                    <div className="text-center space-y-6 py-6 italic-none">
                        <div className="mx-auto size-24 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 ring-8 ring-emerald-50 italic-none">
-                          <CheckCircle2 className="size-12 italic-none" />
+                          <ShieldCheck className="size-12 italic-none" />
                        </div>
-                       <div className="space-y-2">
-                          <h3 className="text-2xl font-bold text-slate-900 italic-none">Money Released!</h3>
-                          <p className="text-slate-500 italic-none">The seller has been paid. Thank you for using SafeDeal.</p>
+                       <div className="space-y-2 italic-none">
+                          <h3 className="text-2xl font-black text-slate-900 italic-none">Deal Finalized</h3>
+                          <p className="text-slate-500 italic-none">Payment released successfully. Escrow closed.</p>
                        </div>
-                       <button 
-                        onClick={() => setStep("pay")}
-                        className="text-emerald-600 font-bold text-sm underline px-4 py-2 hover:bg-emerald-50 rounded-xl transition-colors"
-                       >
-                         Back to Start (Demo)
-                       </button>
                     </div>
                   ) : (
-                    <div className="text-center space-y-6 py-6">
-                       <div className="mx-auto size-24 flex items-center justify-center rounded-full bg-red-100 text-red-600 ring-8 ring-red-50">
-                          <AlertTriangle className="size-12" />
+                    <div className="text-center space-y-6 py-6 italic-none">
+                       <div className="mx-auto size-24 flex items-center justify-center rounded-full bg-red-100 text-red-600 ring-8 ring-red-50 italic-none">
+                          <AlertTriangle className="size-12 italic-none" />
                        </div>
-                       <div className="space-y-2">
-                          <h3 className="text-2xl font-bold text-slate-900">Dispute Opened</h3>
-                          <p className="text-slate-500">Our team will review your case and respond within 24 hours. Your funds remain locked and safe.</p>
+                       <div className="space-y-2 italic-none">
+                          <h3 className="text-2xl font-black text-slate-900 italic-none">Dispute Raised</h3>
+                          <p className="text-slate-500 italic-none">Case under review. Funds are locked securely.</p>
                        </div>
-                       <button 
-                        onClick={() => setStep("confirm_delivery")}
-                        className="text-slate-400 font-bold text-sm px-4 py-2 hover:bg-slate-50 rounded-xl transition-colors"
-                       >
-                         Go Back
-                       </button>
                     </div>
                   )}
                 </motion.div>
@@ -430,15 +403,6 @@ export default function DealPage({ params }: { params: { id: string } }) {
           )}
         </AnimatePresence>
       </main>
-      
-      {/* Mobile-first sticky tip */}
-      {step === "pay" && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 sm:hidden">
-          <div className="mx-auto max-w-lg rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 p-4 shadow-2xl text-center italic-none">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Secure Mobile Payment</p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

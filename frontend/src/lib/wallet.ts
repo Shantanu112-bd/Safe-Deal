@@ -1,4 +1,4 @@
-import { isConnected, getAddress, signTransaction } from "@stellar/freighter-api";
+import { isConnected, getAddress } from "@stellar/freighter-api";
 import albedo from "@albedo-link/intent";
 import * as StellarSdk from "@stellar/stellar-sdk";
 
@@ -42,7 +42,7 @@ export const getUsdcBalance = async (address: string): Promise<{ balance: string
     const server = new StellarSdk.Horizon.Server("https://horizon-testnet.stellar.org");
     const account = await server.loadAccount(address);
     const usdcBalance = account.balances.find(
-      (b: any) => b.asset_code === USDC_ASSET_CODE && b.asset_issuer === USDC_ISSUER
+      (b) => 'asset_code' in b && b.asset_code === USDC_ASSET_CODE && b.asset_issuer === USDC_ISSUER
     );
     
     if (usdcBalance) {
