@@ -288,11 +288,11 @@ export default function DealPage({ params }: { params: { id: string } }) {
                         </div>
 
                         <GradientButton 
-                          className="w-full rounded-2xl py-6 text-lg font-black italic-none"
+                          className="w-full rounded-full text-lg py-5 font-black italic-none"
                           onClick={handlePay}
                           disabled={!hasUsdcTrustline}
                         >
-                          {!hasUsdcTrustline ? "Fix Trustline to Pay" : "Lock & Secure Funds"}
+                          {!hasUsdcTrustline ? "Fix Trustline to Pay" : "Pay & Lock in Escrow"}
                         </GradientButton>
                       </>
                     )}
@@ -329,7 +329,7 @@ export default function DealPage({ params }: { params: { id: string } }) {
 
                      <GradientButton 
                       variant="variant"
-                      className="w-full rounded-2xl py-5 font-bold italic-none"
+                      className="w-full rounded-full text-lg py-5 font-bold italic-none"
                       onClick={() => setStep("confirm_delivery")}
                     >
                       Continue to Receipt
@@ -362,18 +362,18 @@ export default function DealPage({ params }: { params: { id: string } }) {
 
                       <div className="grid gap-3 italic-none">
                         <GradientButton 
-                          className="w-full rounded-2xl py-5 text-lg font-black italic-none"
+                          className="w-full rounded-full text-lg py-5 font-black italic-none"
                           onClick={handleRelease}
                         >
-                          I received it — Release Funds
+                          Yes, I received it — Release Payment
                         </GradientButton>
-                        <button 
+                        <GradientButton 
+                          variant="variant"
+                          className="w-full rounded-full text-lg py-5 font-black italic-none"
                           onClick={handleDispute}
-                          className="w-full rounded-2xl py-4 text-xs font-black uppercase tracking-widest text-red-500 transition-all hover:bg-red-50 flex items-center justify-center gap-2 italic-none"
                         >
-                          <AlertTriangle className="size-4 italic-none" />
-                          Open Dispute
-                        </button>
+                          No, I have a problem — Open Dispute
+                        </GradientButton>
                       </div>
                     </>
                   ) : step === "released" ? (

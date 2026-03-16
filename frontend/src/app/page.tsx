@@ -15,7 +15,6 @@ import {
   Package,
   HandCoins,
   AlertTriangle,
-  Zap,
   Star,
   Globe,
   Smartphone,
@@ -23,6 +22,8 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GradientButton } from "@/components/ui/gradient-button";
+import { SparklesCore } from "@/components/ui/sparkles";
+import { Hero } from "@/components/ui/animated-shader-hero";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
@@ -151,7 +152,7 @@ export default function Home() {
               className="rounded-xl px-6 py-2.5 text-sm font-bold"
               onClick={() => router.push("/dashboard")}
             >
-              Get Started
+              Connect Wallet
             </GradientButton>
           </div>
 
@@ -196,85 +197,69 @@ export default function Home() {
 
       <main>
         {/* ── HERO SECTION ── */}
-        <section className="relative overflow-hidden pt-32 pb-20 lg:pt-48 lg:pb-32 bg-[#f8fafc]">
-          <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 blur-[120px] opacity-20 pointer-events-none">
-             <div className="size-[500px] rounded-full bg-emerald-400" />
-          </div>
-          <div className="mx-auto max-w-7xl px-6 lg:px-8 grid lg:grid-cols-2 gap-16 items-center">
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-            >
-              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-700 mb-6">
-                <Zap className="size-3 fill-current" /> Powered by Stellar Blockchain
+        <Hero
+          trustBadge={{
+            text: "Powered by Stellar blockchain — 5 second settlement",
+            icons: ["🔒"]
+          }}
+          headline={{
+            line1: "Every Deal,",
+            line2: "Guaranteed Safe"
+          }}
+          subtitle="The trusted middleman for WhatsApp and Instagram commerce. Buyers pay safely. Sellers ship confidently. No more scams."
+          buttons={{
+            primary: {
+              text: "I'm a Seller",
+              onClick: () => router.push('/dashboard')
+            },
+            secondary: {
+              text: "I'm a Buyer",
+              onClick: () => router.push('/how-it-works')
+            }
+          }}
+        >
+          {/* Animated deal flow visualization in the hero right slot */}
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, delay: 0.2 }}
+            className="relative rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-2 shadow-2xl lg:p-4 rotate-3"
+          >
+            <div className="rounded-2xl border border-white/5 bg-white/5 p-6 lg:p-8">
+              <div className="flex items-center justify-between mb-8">
+                  <div className="text-xs font-black uppercase tracking-widest text-slate-400">Live Transaction Flow</div>
+                  <div className="size-2 rounded-full bg-emerald-500 animate-ping" />
               </div>
-              <h1 className="text-5xl lg:text-7xl font-black text-[#0f172a] leading-[1.1] tracking-tight mb-8">
-                Every Deal,<br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500">Guaranteed Safe</span>
-              </h1>
-              <p className="text-lg lg:text-xl text-slate-600 leading-relaxed max-w-xl mb-10 font-medium">
-                The trusted middleman for WhatsApp and Instagram commerce. Buyers pay safely, sellers ship confidently. No more scams, just secure trade.
-              </p>
-              <div className="flex flex-wrap gap-4">
-                <GradientButton 
-                  className="rounded-2xl px-10 py-5 text-lg font-black"
-                  onClick={() => router.push("/dashboard")}
-                >
-                  I&apos;m a Seller
-                </GradientButton>
-                <button 
-                  onClick={() => router.push("#how-it-works")}
-                  className="rounded-2xl border-2 border-slate-200 bg-white px-10 py-5 text-lg font-black transition-all hover:bg-slate-50 hover:border-slate-300"
-                >
-                  I&apos;m a Buyer
-                </button>
+              <div className="space-y-4 text-white">
+                {[
+                  { label: "Buyer Initiates", icon: Wallet, active: false },
+                  { label: "Payment Locked", icon: Lock, active: true },
+                  { label: "SafeDeal Vault", icon: Shield, active: false },
+                  { label: "Seller Ships Item", icon: Send, active: false },
+                  { label: "Buyer Confirms", icon: CheckCircle2, active: false },
+                  { label: "Payment Released", icon: HandCoins, active: false },
+                ].map((step, i) => (
+                  <motion.div 
+                    key={step.label}
+                    initial={{ x: -10, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.5 + (i * 0.1) }}
+                    className={cn(
+                      "flex items-center gap-4 rounded-xl border p-4 transition-all duration-500",
+                      step.active ? "bg-white/10 border-emerald-500 shadow-lg shadow-emerald-500/10" : "bg-white/5 border-white/5 grayscale opacity-40"
+                    )}
+                  >
+                    <div className={cn("flex size-10 items-center justify-center rounded-lg", step.active ? "bg-emerald-500 text-white" : "bg-white/10 text-slate-400")}>
+                      <step.icon className="size-5" />
+                    </div>
+                    <div className="flex-1 text-sm font-black">{step.label}</div>
+                    {step.active && <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Secured</div>}
+                  </motion.div>
+                ))}
               </div>
-            </motion.div>
-
-            {/* Hero visual: animated deal flow */}
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 1, delay: 0.2 }}
-              className="relative rounded-3xl border border-slate-200 bg-white p-2 shadow-2xl shadow-slate-900/5 lg:p-4 rotate-3"
-            >
-              <div className="rounded-2xl border border-slate-50 bg-slate-50 p-6 lg:p-8">
-                <div className="flex items-center justify-between mb-8">
-                   <div className="text-xs font-black uppercase tracking-widest text-slate-400">Live Transaction Flow</div>
-                   <div className="size-2 rounded-full bg-emerald-500 animate-ping" />
-                </div>
-                <div className="space-y-4">
-                  {[
-                    { label: "Buyer Initiates", icon: Wallet, active: false },
-                    { label: "Payment Locked", icon: Lock, active: true },
-                    { label: "SafeDeal Vault", icon: Shield, active: false },
-                    { label: "Seller Ships Item", icon: Send, active: false },
-                    { label: "Buyer Confirms", icon: CheckCircle2, active: false },
-                    { label: "Payment Released", icon: HandCoins, active: false },
-                  ].map((step, i) => (
-                    <motion.div 
-                      key={step.label}
-                      initial={{ x: -10, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      transition={{ delay: 0.5 + (i * 0.1) }}
-                      className={cn(
-                        "flex items-center gap-4 rounded-xl border p-4 transition-all duration-500",
-                        step.active ? "bg-white border-emerald-500 shadow-lg shadow-emerald-500/10" : "bg-white/40 border-slate-200/50 grayscale opacity-40"
-                      )}
-                    >
-                      <div className={cn("flex size-10 items-center justify-center rounded-lg", step.active ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-400")}>
-                        <step.icon className="size-5" />
-                      </div>
-                      <div className="flex-1 text-sm font-black text-slate-900">{step.label}</div>
-                      {step.active && <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Secured</div>}
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </section>
+            </div>
+          </motion.div>
+        </Hero>
 
         {/* ── PROBLEM SECTION ── */}
         <section className="bg-[#0f172a] py-24 lg:py-32 text-white relative overflow-hidden">
@@ -384,7 +369,10 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-              <GradientButton className="rounded-2xl px-8 py-4 text-base font-black">
+              <GradientButton 
+                className="rounded-2xl px-8 py-4 text-base font-black"
+                onClick={() => router.push("/dashboard")}
+              >
                  Start Selling Safely
               </GradientButton>
             </motion.div>
@@ -496,6 +484,15 @@ export default function Home() {
 
         {/* ── STATS BAR ── */}
         <section className="bg-[#0f172a] py-20 text-white border-y border-white/5 relative">
+          <SparklesCore
+            background="transparent"
+            minSize={0.4}
+            maxSize={1}
+            particleDensity={60}
+            className="absolute inset-0 w-full h-full"
+            particleColor="#10b981"
+            speed={1}
+          />
           <div className="mx-auto max-w-7xl px-6 lg:px-8 relative z-10">
             <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
               {stats.map((stat, idx) => (
@@ -510,8 +507,8 @@ export default function Home() {
         </section>
 
         {/* ── CTA SECTION ── */}
-        <section className="py-24 lg:py-40 bg-white relative overflow-hidden">
-          <div className="mx-auto max-w-4xl px-6 lg:px-8 relative z-10 text-center">
+        <section className="py-24 lg:py-40 bg-white relative overflow-hidden text-center">
+          <div className="mx-auto max-w-4xl px-6 lg:px-8 relative z-10">
             <motion.div {...fadeIn}>
               <h2 className="text-4xl lg:text-6xl font-black text-[#0f172a] mb-8 tracking-tight">
                 Start protecting your deals today
@@ -525,6 +522,13 @@ export default function Home() {
                   onClick={() => router.push("/dashboard")}
                 >
                   Create Your First Deal
+                </GradientButton>
+                <GradientButton 
+                  variant="variant"
+                  className="rounded-2xl px-12 py-6 text-xl font-black"
+                  onClick={() => router.push("#how-it-works")}
+                >
+                  Get Started
                 </GradientButton>
               </div>
               <div className="mt-12 flex items-center justify-center gap-8 grayscale opacity-50">

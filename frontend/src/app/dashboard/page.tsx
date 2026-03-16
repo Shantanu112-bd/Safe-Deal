@@ -8,6 +8,8 @@ import {
   History,
   User,
   Plus,
+  Share2,
+  Wallet
 } from "lucide-react";
 import { GradientButton } from "@/components/ui/gradient-button";
 import { CreateDealModal } from "@/components/deal/CreateDealModal";
@@ -147,6 +149,16 @@ export default function Dashboard() {
               <span>Payments</span>
             </a>
           </nav>
+
+          <div className="mt-auto pt-6">
+             <GradientButton 
+               className="min-w-0 w-full px-4 py-2 text-sm rounded-lg"
+               onClick={() => {}}
+             >
+                <Wallet className="mr-2 size-4" />
+                Fund
+             </GradientButton>
+          </div>
         </aside>
 
         {/* Main content */}
@@ -159,7 +171,7 @@ export default function Dashboard() {
                 onClick={() => setShowCreate(true)}
               >
                 <Plus className="mr-1.5 size-4" />
-                Create Deal
+                Create New Deal
               </GradientButton>
             </div>
           </header>
@@ -189,14 +201,24 @@ export default function Dashboard() {
                        {activeDeals.map((deal) => {
                           const style = statusStyles[deal.status];
                           return (
-                            <div key={deal.id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100 italic-none">
-                               <div>
+                            <div key={deal.id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100 italic-none px-6">
+                               <div className="flex-1">
                                   <p className="font-bold text-slate-900 text-sm">#{deal.id} {deal.title}</p>
-                                  <p className="text-xs text-slate-400 font-bold uppercase mt-1 italic-none">{deal.amount}</p>
+                                  <div className="flex items-center gap-3 mt-1">
+                                    <p className="text-xs text-slate-400 font-bold uppercase italic-none">{deal.amount}</p>
+                                    <span className={cn("px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest italic-none", style.badgeClass)}>
+                                      {deal.status}
+                                    </span>
+                                  </div>
                                </div>
-                               <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest italic-none", style.badgeClass)}>
-                                  {deal.status}
-                               </span>
+                               <GradientButton 
+                                 variant="variant" 
+                                 className="min-w-0 px-4 py-2 text-sm rounded-lg"
+                                 onClick={() => {}}
+                               >
+                                  <Share2 className="mr-2 size-4" />
+                                  Share Link
+                               </GradientButton>
                             </div>
                           );
                        })}
