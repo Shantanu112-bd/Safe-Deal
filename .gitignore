@@ -1,0 +1,21 @@
+# Rust artifacts
+target/
+**/*.rs.bk
+
+# OS files
+.DS_Store
+
+# IDEs
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Workspace
+.orchids/
+.gemini/
+
+# Environment files
+.env.local
+.env.*.local
