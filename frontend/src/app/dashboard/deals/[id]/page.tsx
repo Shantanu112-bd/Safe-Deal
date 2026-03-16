@@ -237,12 +237,36 @@ export default function DealDetailPage({ params }: { params: { id: string } }) {
                              <ExternalLink className="inline-block mr-2 size-3.5" />
                              View Dispute Details
                           </button>
-                       </div>
+                        </div>
                     )}
                  </div>
               </article>
-           </div>
-        </div>
+
+               {/* SHARE LINK SECTION */}
+               <article className="rounded-[2.5rem] bg-white border border-slate-100 p-8 shadow-sm space-y-6">
+                  <div className="flex items-center gap-2">
+                     <Share2 className="size-4 text-slate-400" />
+                     <h2 className="text-xs font-black uppercase tracking-widest text-slate-900">Strategic Sharing</h2>
+                  </div>
+                  
+                  <div className="space-y-4">
+                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Customer Payment URL</p>
+                     <div className="flex items-center gap-2 p-4 rounded-2xl bg-slate-50 border border-slate-100 group">
+                        <span className="flex-1 font-mono text-xs font-bold text-slate-500 truncate italic-none">safedeal.app/deal/{deal.id}</span>
+                        <button 
+                           onClick={handleCopyLink}
+                           className="size-10 flex items-center justify-center rounded-xl bg-white shadow-sm border border-slate-100 hover:border-slate-900 transition-colors"
+                        >
+                           <Copy className="size-4" />
+                        </button>
+                     </div>
+                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
+                        Share this link with your buyer. They will be prompted to connect their wallet and lock the USDC amount.
+                     </p>
+                  </div>
+               </article>
+            </div>
+         </div>
       </main>
     </div>
   );

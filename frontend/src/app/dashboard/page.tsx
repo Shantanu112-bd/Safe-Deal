@@ -7,7 +7,6 @@ import {
   Share2,
   ExternalLink,
   Ban,
-  Wallet,
   CheckCircle2,
   AlertTriangle,
   Clock,
@@ -27,7 +26,6 @@ import {
 import { GradientButton } from "@/components/ui/gradient-button";
 import { CreateDealModal } from "@/components/deal/CreateDealModal";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useWallet } from "@/context/WalletContext";
 import { cn } from "@/lib/utils";
 
 type DealStatus =

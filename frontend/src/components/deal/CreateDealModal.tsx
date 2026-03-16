@@ -14,7 +14,8 @@ import {
   Calendar,
   DollarSign,
   Tag,
-  ShoppingBag
+  ShoppingBag,
+  Plus
 } from "lucide-react";
 import { GradientButton } from "@/components/ui/gradient-button";
 import QRCode from "react-qr-code";
@@ -231,7 +232,22 @@ export function CreateDealModal({ open, onClose }: Props) {
                             </select>
                          </div>
                       </div>
-                   </div>
+
+                       <div className="grid gap-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Item Photo (Optional)</label>
+                          <div className="flex items-center justify-center w-full">
+                             <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-100 border-dashed rounded-[1.5rem] cursor-pointer bg-slate-50/50 hover:bg-slate-50 transition-all group">
+                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                   <div className="size-10 rounded-xl bg-white shadow-sm flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                                      <Plus className="size-5 text-slate-400" />
+                                   </div>
+                                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Upload JPG, PNG</p>
+                                </div>
+                                <input type="file" className="hidden" accept="image/*" />
+                             </label>
+                          </div>
+                       </div>
+                    </div>
 
                    <GradientButton className="w-full rounded-2xl py-4 font-black uppercase tracking-widest text-xs" onClick={handleNext}>
                       Continue to Review

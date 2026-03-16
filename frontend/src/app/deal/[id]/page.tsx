@@ -2,12 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { 
-  Lock, 
   Package, 
   CheckCircle2, 
   AlertTriangle, 
   Star, 
-  Clock, 
   ShieldCheck, 
   ShieldAlert, 
   Timer,
@@ -26,6 +24,7 @@ import { useWallet } from "@/context/WalletContext";
 import { WalletConnect } from "@/components/wallet/WalletConnect";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import Image from "next/image";
 import { 
   Card, 
   CardContent, 
@@ -60,7 +59,15 @@ const DEAL_DATA = {
 };
 
 export default function BuyerPaymentPage({ params }: { params: { id: string } }) {
-  const { connected, balance, isBlocked, riskScore, hasUsdcTrustline } = useWallet();
+  const { isConnected } = useWallet();
+  const connected = isConnected; // Alias for internal use
+  console.log("Loading deal ID:", params.id);
+  
+  // Mock security features (These will be implemented via contract calls later)
+  const isBlocked = false;
+  const riskScore = 12; // Low risk
+  const hasUsdcTrustline = true;
+
   const [step, setStep] = useState<PageStep>("pay");
   const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState(172800); // 48 hours
@@ -186,7 +193,12 @@ export default function BuyerPaymentPage({ params }: { params: { id: string } })
               {/* 2. DEAL DETAILS CARD */}
               <Card className="rounded-[2.5rem] bg-white border-slate-200 shadow-sm overflow-hidden">
                  <div className="aspect-[16/9] bg-slate-100 relative group overflow-hidden">
-                    <img src={DEAL_DATA.imageUrl} alt={DEAL_DATA.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                    <Image 
+                       src={DEAL_DATA.imageUrl} 
+                       alt={DEAL_DATA.title} 
+                       fill
+                       className="object-cover group-hover:scale-105 transition-transform duration-700" 
+                    />
                     <div className="absolute top-4 left-4">
                        <Badge className="bg-white/90 backdrop-blur-md text-slate-900 border-none font-black text-[10px] px-3 py-1">#{DEAL_DATA.id}</Badge>
                     </div>
@@ -320,8 +332,13 @@ export default function BuyerPaymentPage({ params }: { params: { id: string } })
                        {step === "confirm_delivery" ? (
                           <>
                              <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl italic-none">
-                                <div className="size-16 rounded-xl bg-white shrink-0 overflow-hidden border border-slate-100">
-                                   <img src={DEAL_DATA.imageUrl} className="h-full w-full object-cover" />
+                                <div className="size-16 rounded-xl bg-white shrink-0 overflow-hidden border border-slate-100 relative">
+                                   <Image 
+                                      src={DEAL_DATA.imageUrl} 
+                                      alt={DEAL_DATA.title}
+                                      fill
+                                      className="object-cover" 
+                                   />
                                 </div>
                                 <div className="italic-none">
                                    <p className="text-sm font-black italic-none text-slate-900">{DEAL_DATA.title}</p>

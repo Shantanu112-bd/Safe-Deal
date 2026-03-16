@@ -1,11 +1,7 @@
 import freighter from "@stellar/freighter-api";
-const { isConnected, getPublicKey, signTransaction: signFreighter } = freighter;
+const { isConnected, getAddress, signTransaction: signFreighter } = freighter;
 import albedo from "@albedo-link/intent";
 import { 
-  Transaction, 
-  Keypair, 
-  Networks, 
-  Asset, 
   Horizon 
 } from "@stellar/stellar-sdk";
 
@@ -19,8 +15,8 @@ const server = new Horizon.Server(HORIZON_URL);
  */
 export const connectFreighter = async () => {
   if (await isConnected()) {
-    const publicKey = await getPublicKey();
-    return { publicKey, walletType: "freighter" as const };
+    const { address } = await getAddress();
+    return { publicKey: address, walletType: "freighter" as const };
   }
   throw new Error("Freighter not installed");
 };
@@ -70,14 +66,14 @@ export const getBalances = async (publicKey: string) => {
 export const signTransaction = async (
   xdr: string, 
   walletType: WalletType,
-  network: string = "TESTNET"
+  networkPassphrase: string = "Test SDF Network ; September 2015"
 ) => {
   if (walletType === "freighter") {
     const result = await signFreighter(xdr, { 
-      network: network as any 
+      networkPassphrase
     });
     if (typeof result === "string") return result;
-    if ("signedTxXdr" in result) return result.signedTxXdr;
+    if (result && "signedTxXdr" in result) return result.signedTxXdr;
     throw new Error("Failed to sign with Freighter");
   } else if (walletType === "albedo") {
     const result = await albedo.tx({

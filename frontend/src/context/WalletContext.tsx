@@ -70,8 +70,9 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       localStorage.setItem("safedeal_wallet_type", walletType);
       document.cookie = `safedeal_pubkey=${publicKey}; path=/; max-age=604800; samesite=lax`;
       toast.success("Wallet connected via Freighter");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to connect Freighter");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to connect Freighter";
+      toast.error(message);
     }
   };
 
@@ -84,8 +85,9 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       localStorage.setItem("safedeal_wallet_type", walletType);
       document.cookie = `safedeal_pubkey=${publicKey}; path=/; max-age=604800; samesite=lax`;
       toast.success("Wallet connected via Albedo");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to connect Albedo");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to connect Albedo";
+      toast.error(message);
     }
   };
 

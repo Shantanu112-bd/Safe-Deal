@@ -16,7 +16,7 @@ export const notify = {
   warning: (message: string, description?: string) => {
     toast.warning(message, { description });
   },
-  promise: (promise: Promise<any>, text: { loading: string; success: string; error: string }) => {
+  promise: (promise: Promise<unknown>, text: { loading: string; success: string; error: string }) => {
     toast.promise(promise, text);
   },
   // Specific Deal notifications

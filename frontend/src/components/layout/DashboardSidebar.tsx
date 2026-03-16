@@ -12,7 +12,8 @@ import {
   Plus,
   Wallet,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  LucideIcon
 } from "lucide-react";
 import { useWallet } from "@/context/WalletContext";
 import { cn } from "@/lib/utils";
@@ -125,7 +126,7 @@ export function DashboardSidebar() {
   );
 }
 
-function MobileTab({ item, isActive }: { item: any, isActive: boolean }) {
+function MobileTab({ item, isActive }: { item: { label: string; href: string; icon: LucideIcon }, isActive: boolean }) {
   return (
     <Link 
       href={item.href}

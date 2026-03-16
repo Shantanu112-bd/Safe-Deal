@@ -4,15 +4,12 @@ import { useState } from "react";
 import { 
   Dialog, 
   DialogContent, 
-  DialogHeader, 
   DialogTitle, 
   DialogDescription 
 } from "@/components/ui/dialog";
-import { GradientButton } from "@/components/ui/gradient-button";
 import { useWallet } from "@/context/WalletContext";
 import { 
   Wallet, 
-  Loader2, 
   CheckCircle2, 
   XCircle,
   ShieldCheck,
@@ -47,8 +44,8 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
         onOpenChange(false);
         setStep("choose");
       }, 2000);
-    } catch (err: any) {
-      setError(err.message || "Failed to connect");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to connect");
       setStep("choose");
     }
   };
@@ -84,7 +81,7 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
                   >
                     <div className="flex items-center gap-4">
                       <div className="size-12 rounded-2xl bg-white/10 flex items-center justify-center">
-                         <img src="/freighter-logo.png" alt="Freighter" className="size-6 object-contain grayscale group-hover:grayscale-0 transition-all" />
+                         <div className="size-6 bg-white/20 rounded flex items-center justify-center font-black text-[10px]">F</div>
                       </div>
                       <div className="text-left">
                         <p className="font-black text-white italic-none">Freighter</p>
@@ -100,7 +97,7 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
                   >
                     <div className="flex items-center gap-4">
                       <div className="size-12 rounded-2xl bg-white/10 flex items-center justify-center">
-                         <img src="/albedo-logo.png" alt="Albedo" className="size-6 object-contain grayscale group-hover:grayscale-0 transition-all" />
+                         <div className="size-6 bg-white/20 rounded flex items-center justify-center font-black text-[10px]">A</div>
                       </div>
                       <div className="text-left">
                         <p className="font-black text-white italic-none">Albedo</p>

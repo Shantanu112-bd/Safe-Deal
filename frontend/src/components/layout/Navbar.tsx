@@ -6,12 +6,9 @@ import {
   Shield, 
   Menu, 
   X, 
-  Wallet, 
-  ChevronRight,
   LayoutDashboard,
   User,
-  Settings,
-  HelpCircle
+  Settings
 } from "lucide-react";
 import { GradientButton } from "@/components/ui/gradient-button";
 import { WalletModal } from "@/components/wallet/WalletModal";
@@ -19,8 +16,6 @@ import { useWallet } from "@/context/WalletContext";
 import { 
   Sheet, 
   SheetContent, 
-  SheetHeader, 
-  SheetTitle, 
   SheetTrigger 
 } from "@/components/ui/sheet";
 import { 
@@ -31,7 +26,6 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
 
 export function Navbar() {
   const { isConnected, publicKey, disconnect } = useWallet();
@@ -77,31 +71,29 @@ export function Navbar() {
         <div className="flex items-center gap-4">
           {isConnected ? (
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2.5 rounded-full bg-slate-900 px-1.5 py-1.5 pr-4 text-white hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10">
-                  <div className="flex size-8 items-center justify-center rounded-full bg-emerald-500 text-white font-black text-[10px]">
-                    {publicKey?.slice(0, 1)}
-                  </div>
-                  <span className="text-xs font-black font-mono tracking-tight">
-                    {publicKey?.slice(0, 4)}...{publicKey?.slice(-4)}
-                  </span>
-                </button>
+              <DropdownMenuTrigger className="flex items-center gap-2.5 rounded-full bg-slate-900 px-1.5 py-1.5 pr-4 text-white hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10">
+                <div className="flex size-8 items-center justify-center rounded-full bg-emerald-500 text-white font-black text-[10px]">
+                  {publicKey?.slice(0, 1)}
+                </div>
+                <span className="text-xs font-black font-mono tracking-tight">
+                  {publicKey?.slice(0, 4)}...{publicKey?.slice(-4)}
+                </span>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 rounded-2xl p-2 border-slate-200">
                 <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-3 py-2 italic-none">Safe Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard" className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-900 focus:bg-slate-50">
+                <DropdownMenuItem className="p-0">
+                  <Link href="/dashboard" className="flex w-full items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-900 focus:bg-slate-50">
                     <LayoutDashboard className="size-4" /> Dashboard
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/merchant/profile" className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-900 focus:bg-slate-50">
+                <DropdownMenuItem className="p-0">
+                  <Link href="/merchant/profile" className="flex w-full items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-900 focus:bg-slate-50">
                     <User className="size-4" /> Storefront
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/settings" className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-900 focus:bg-slate-50">
+                <DropdownMenuItem className="p-0">
+                  <Link href="/settings" className="flex w-full items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-900 focus:bg-slate-50">
                     <Settings className="size-4" /> Settings
                   </Link>
                 </DropdownMenuItem>
@@ -127,10 +119,8 @@ export function Navbar() {
 
           {/* MOBILE MENU */}
           <Sheet>
-            <SheetTrigger asChild>
-              <button className="lg:hidden rounded-xl bg-slate-50 p-2.5 text-slate-600 hover:bg-slate-100 transition-all">
-                <Menu className="size-6" />
-              </button>
+            <SheetTrigger className="lg:hidden rounded-xl bg-slate-50 p-2.5 text-slate-600 hover:bg-slate-100 transition-all">
+              <Menu className="size-6" />
             </SheetTrigger>
             <SheetContent side="right" className="w-full sm:w-[350px] p-0 border-none">
                <div className="flex h-full flex-col bg-white p-8">
@@ -175,7 +165,7 @@ export function Navbar() {
                         </GradientButton>
                      ) : (
                         <div className="grid grid-cols-2 gap-3">
-                           <GradientButton variant="variant" className="rounded-2xl py-4 font-black uppercase tracking-widest text-[10px]" asChild>
+                           <GradientButton variant="variant" className="rounded-2xl py-4 font-black uppercase tracking-widest text-[10px]">
                               <Link href="/dashboard">Dashboard</Link>
                            </GradientButton>
                            <button onClick={disconnect} className="rounded-2xl border border-red-100 bg-red-50 text-red-500 font-black uppercase tracking-widest text-[10px]">
