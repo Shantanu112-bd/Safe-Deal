@@ -15,13 +15,16 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-      - name: Run all contract tests
-        run: |
-          cd contracts/merchant-escrow && cargo test
-          cd ../fraud-detection && cargo test
-          cd ../dispute-resolution && cargo test
-          cd ../seller-verification && cargo test
-          cd ../fiat-bridge && cargo test
+      - name: Test merchant-escrow
+        run: cd contracts/merchant-escrow && cargo test
+      - name: Test fraud-detection
+        run: cd contracts/fraud-detection && cargo test
+      - name: Test dispute-resolution
+        run: cd contracts/dispute-resolution && cargo test
+      - name: Test seller-verification
+        run: cd contracts/seller-verification && cargo test
+      - name: Test fiat-bridge
+        run: cd contracts/fiat-bridge && cargo test
 
   build-frontend:
     runs-on: ubuntu-latest
