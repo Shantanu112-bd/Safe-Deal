@@ -26,6 +26,7 @@ export default function DisputePage({ params }: { params: { id: string } }) {
   const { publicKey } = useWallet();
   const [status, setStatus] = useState<DisputeStatus>("pending_evidence");
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [dealData, setDealData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   
@@ -49,8 +50,8 @@ export default function DisputePage({ params }: { params: { id: string } }) {
           });
           setStatus(dispute.status);
         }
-      } catch (err) {
-        console.error(err);
+      } catch {
+        // Ignored
       } finally {
         setLoading(false);
       }
@@ -75,7 +76,7 @@ export default function DisputePage({ params }: { params: { id: string } }) {
       );
       toast.success("Evidence submitted successfully");
       setEvidenceExplanation("");
-    } catch (e) {
+    } catch {
       toast.error("Failed to submit evidence");
     } finally {
       setSubmitting(false);

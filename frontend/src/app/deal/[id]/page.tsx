@@ -146,6 +146,7 @@ export default function BuyerPaymentPage({ params }: { params: { id: string } })
       // result might be a standard string or object from invokeContract based on how we wrote raiseDispute
       // usually a txHash or something, but the prompt says result.disputeId. Let's just use params.id for now since we mapped deal->dispute
       // The prompt actually expects `result.disputeId`
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const dId = result && (result as any).disputeId ? (result as any).disputeId : `DISP-${params.id}`;
       router.push(`/dashboard/disputes/${dId}`);
     } catch (error) {

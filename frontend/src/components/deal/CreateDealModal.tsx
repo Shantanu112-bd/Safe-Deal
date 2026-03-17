@@ -46,7 +46,6 @@ export function CreateDealModal({ open, onClose }: Props) {
   const [isCreating, setIsCreating] = useState(false);
 
   const [finalDealId, setFinalDealId] = useState<string | null>(null);
-  const [finalSlug, setFinalSlug] = useState<string | null>(null);
 
   const parsedAmount = useMemo(
     () => (amountUsdc ? Number.parseFloat(amountUsdc) || 0 : 0),
@@ -122,7 +121,6 @@ export function CreateDealModal({ open, onClose }: Props) {
 
       if (result.success) {
         setFinalDealId(result.dealId);
-        setFinalSlug(result.dealId); // keep for compat
         setStep(3);
         toast.success(`Deal #${result.dealId} created successfully!`);
       }

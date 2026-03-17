@@ -9,11 +9,11 @@
 
 import {
   Horizon,
-  TransactionBuilder,
   Transaction,
   FeeBumpTransaction,
+  TransactionBuilder,
 } from "@stellar/stellar-sdk";
-import { CONTRACTS, PASSPHRASE, HORIZON_URL } from "./contracts";
+import { PASSPHRASE, HORIZON_URL } from "./contracts";
 import { WalletType } from "./wallet";
 import {
   isOnChainMode,
@@ -571,6 +571,7 @@ export async function registerSeller(
       toScString(contact)
     ],
     // Let wallet decide type
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     "TESTNET" as any
   );
 }
@@ -652,6 +653,7 @@ export async function raiseDispute(
       toScString(mappedReason), // mapped reason
       toScString(evidenceHash) // using as description temporarily
     ],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     "TESTNET" as any
   );
 }
@@ -671,6 +673,7 @@ export async function submitEvidence(
       toScAddress(submitter),
       toScString(`${evidenceType}:${evidenceHash}`)
     ],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     "TESTNET" as any
   );
 }
