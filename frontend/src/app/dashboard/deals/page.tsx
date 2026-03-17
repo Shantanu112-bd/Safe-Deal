@@ -16,18 +16,11 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import { useWallet } from "@/context/WalletContext";
 import Link from "next/link";
 import { toast } from "sonner";
+import { getSellerDeals, type DealData } from "@/lib/stellar";
 
 type Status = "all" | "waiting" | "locked" | "shipped" | "disputed";
 
-interface Deal {
-  id: string;
-  title: string;
-  amountUSDC: number;
-  status: string;
-  createdAt: number;
-  expiresAt: number;
-  sellerKey: string;
-}
+
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
   waiting:  { label: "Waiting for Payment", color: "text-amber-600",   bg: "bg-amber-50 border-amber-100" },
@@ -42,14 +35,21 @@ export default function ActiveDealsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [filter, setFilter] = useState<Status>("all");
   const [search, setSearch] = useState("");
-  const [deals, setDeals] = useState<Deal[]>([]);
-  const { isConnected } = useWallet();
+  const [deals, setDeals] = useState<DealData[]>([]);
+  const { isConnected, publicKey } = useWallet();
 
-  const loadDeals = () => {
+  const loadDeals = async () => {
     try {
-      const raw = localStorage.getItem("safedeal_deals");
-      if (raw) setDeals(JSON.parse(raw) as Deal[]);
-      else setDeals([]);
+      if (publicKey) {
+        // Uses Soroban contract when deployed, localStorage otherwise
+        const result = await getSellerDeals(publicKey);
+        setDeals(result);
+      } else {
+        // Fallback: load all deals from localStorage
+        const raw = localStorage.getItem("safedeal_deals");
+        if (raw) setDeals(JSON.parse(raw) as DealData[]);
+        else setDeals([]);
+      }
     } catch {
       setDeals([]);
     }
@@ -74,7 +74,7 @@ export default function ActiveDealsPage() {
     return matchesStatus && matchesSearch;
   });
 
-  const handleShare = (deal: Deal) => {
+  const handleShare = (deal: DealData) => {
     const url = `${window.location.origin}/deal/${deal.id}`;
     navigator.clipboard.writeText(url);
     toast.success("Deal link copied to clipboard!");

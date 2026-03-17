@@ -24,7 +24,9 @@ import { WalletConnect } from "@/components/wallet/WalletConnect";
 import { toast } from "sonner";
 import {
   lockPayment,
-  confirmDelivery as confirmOnChain
+  confirmDelivery as confirmOnChain,
+  getDeal as fetchDealFromStore,
+  type DealData
 } from "@/lib/stellar";
 import {
   Card,
@@ -39,45 +41,28 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 
 type PageStep = "pay" | "locking" | "success" | "confirm_delivery" | "released" | "dispute_opened";
 
-// Deal shape — matches what createEscrowTransaction stores in localStorage
-// In production this will be fetched from the Soroban merchant-escrow contract
-interface DealInfo {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  amountUSDC: number;
-  sellerKey: string;
-  walletType: string;
-  status: string;
-  createdAt: number;
-  expiresAt: number;
-}
 
 export default function BuyerPaymentPage({ params }: { params: { id: string } }) {
-  const { isConnected, walletType, fraudScore, fraudLevel } = useWallet();
+  const { isConnected, walletType, fraudScore, fraudLevel, publicKey } = useWallet();
 
   const isBlocked = fraudLevel === "Blocked";
 
   const [step, setStep] = useState<PageStep>("pay");
-  const [deal, setDeal] = useState<DealInfo | null>(null);
+  const [deal, setDeal] = useState<DealData | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState(172800); // 48 hours
 
-  // Fetch deal from localStorage (local-first testnet mode)
-  // TODO: Replace with real Soroban contract call → get_deal(params.id) when deployed
+  // Fetch deal from Soroban contract (on-chain) or localStorage (fallback)
   useEffect(() => {
     const fetchDeal = async () => {
       try {
-        const raw = localStorage.getItem(`safedeal_deal_${params.id}`);
-        if (!raw) {
+        const dealData = await fetchDealFromStore(params.id);
+        if (!dealData) {
           setNotFound(true);
         } else {
-          const parsed = JSON.parse(raw) as DealInfo;
-          setDeal(parsed);
-          // Pre-fill 48h timer from expiry
-          const secondsLeft = Math.max(0, Math.floor((parsed.expiresAt - Date.now()) / 1000));
+          setDeal(dealData);
+          const secondsLeft = Math.max(0, Math.floor((dealData.expiresAt - Date.now()) / 1000));
           setTimeLeft(secondsLeft);
         }
       } catch {
@@ -107,26 +92,28 @@ export default function BuyerPaymentPage({ params }: { params: { id: string } })
     if (!deal) return;
     setStep("locking");
     try {
-      const result = await lockPayment(params.id, deal.amountUSDC, walletType);
+      const result = await lockPayment(params.id, deal.amountUSDC, walletType, publicKey || undefined);
       if (result.success) {
         setStep("success");
         toast.success("Payment locked in escrow!");
       }
-    } catch {
+    } catch (err) {
       setStep("pay");
-      toast.error("Stellar transaction failed. Check your wallet.");
+      const msg = err instanceof Error ? err.message : "Stellar transaction failed. Check your wallet.";
+      toast.error(msg);
     }
   };
 
   const handleConfirmDelivery = async () => {
     try {
-      const result = await confirmOnChain(params.id, walletType);
+      const result = await confirmOnChain(params.id, walletType, publicKey || undefined);
       if (result.success) {
         setStep("released");
         toast.success("Funds released to seller. Thank you!");
       }
-    } catch {
-      toast.error("Failed to release funds on-chain.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to release funds on-chain.";
+      toast.error(msg);
     }
   };
 
