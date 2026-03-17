@@ -48,7 +48,7 @@ SafeDeal is composed of 5 Soroban smart contracts + a Next.js frontend:
 | `seller-verification` | Trust badges & ratings | ✅ Complete | `CVERIFY...WXYZ3456` |
 | `fiat-bridge` | SEP-24 fiat rails | ✅ Complete | `CFIAT...WXYZ7890` |
 
-**Total: 145 tests — all passing ✅**
+**Total: 148 tests — all passing ✅**
 
 ---
 
