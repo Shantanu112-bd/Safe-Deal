@@ -1,4 +1,5 @@
 #![no_std]
+#[cfg(test)]
 extern crate alloc;
 
 use soroban_sdk::{contract, contractimpl, contracttype, symbol_short, Address, Env, String, Vec};
@@ -183,8 +184,7 @@ impl DisputeResolutionContract {
             .instance()
             .get(&DataKey::NextDisputeId)
             .unwrap_or(1);
-        let dispute_id_str = alloc::format!("DISP-{}", next_id);
-        let dispute_id = String::from_str(&env, &dispute_id_str);
+        let dispute_id = id_to_string(&env, "DISP-", next_id);
         env.storage()
             .instance()
             .set(&DataKey::NextDisputeId, &(next_id + 1));
@@ -532,6 +532,34 @@ impl DisputeResolutionContract {
         }
         disputes
     }
+}
+
+fn id_to_string(env: &Env, prefix: &str, mut num: u64) -> String {
+    let mut buf = [0u8; 32];
+    let prefix_bytes = prefix.as_bytes();
+    let mut len = prefix_bytes.len();
+    for i in 0..len {
+        buf[i] = prefix_bytes[i];
+    }
+    if num == 0 {
+        buf[len] = b'0';
+        len += 1;
+    } else {
+        let mut temp = num;
+        let mut num_len = 0;
+        while temp > 0 {
+            temp /= 10;
+            num_len += 1;
+        }
+        let mut i = num_len;
+        while num > 0 {
+            buf[len + i - 1] = b'0' + (num % 10) as u8;
+            num /= 10;
+            i -= 1;
+        }
+        len += num_len;
+    }
+    String::from_str(env, core::str::from_utf8(&buf[..len]).unwrap())
 }
 
 mod test;

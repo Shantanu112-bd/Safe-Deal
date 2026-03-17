@@ -1,4 +1,5 @@
 #![no_std]
+#[cfg(test)]
 extern crate alloc;
 
 use soroban_sdk::{
@@ -113,8 +114,7 @@ impl MerchantEscrowContract {
             .get(&DataKey::NextDealId)
             .unwrap_or(1);
 
-        let deal_id_str = alloc::format!("DEAL-{}", next_id);
-        let deal_id = String::from_str(&env, &deal_id_str);
+        let deal_id = id_to_string(&env, "DEAL-", next_id);
 
         env.storage()
             .instance()
@@ -385,6 +385,34 @@ impl MerchantEscrowContract {
         }
         deals
     }
+}
+
+fn id_to_string(env: &Env, prefix: &str, mut num: u64) -> String {
+    let mut buf = [0u8; 32];
+    let prefix_bytes = prefix.as_bytes();
+    let mut len = prefix_bytes.len();
+    for i in 0..len {
+        buf[i] = prefix_bytes[i];
+    }
+    if num == 0 {
+        buf[len] = b'0';
+        len += 1;
+    } else {
+        let mut temp = num;
+        let mut num_len = 0;
+        while temp > 0 {
+            temp /= 10;
+            num_len += 1;
+        }
+        let mut i = num_len;
+        while num > 0 {
+            buf[len + i - 1] = b'0' + (num % 10) as u8;
+            num /= 10;
+            i -= 1;
+        }
+        len += num_len;
+    }
+    String::from_str(env, core::str::from_utf8(&buf[..len]).unwrap())
 }
 
 mod test;

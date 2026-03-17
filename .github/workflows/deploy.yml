@@ -21,6 +21,7 @@ jobs:
           cd ../fraud-detection && cargo test
           cd ../dispute-resolution && cargo test
           cd ../seller-verification && cargo test
+          cd ../fiat-bridge && cargo test
 
   build-frontend:
     runs-on: ubuntu-latest

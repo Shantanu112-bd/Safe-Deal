@@ -282,7 +282,7 @@
                         "symbol": "description"
                       },
                       "val": {
-                        "string": "20 failed payments in history (+100 points)"
+                        "string": "Failed payments in history"
                       }
                     },
                     {

@@ -1,4 +1,5 @@
 #![no_std]
+#[cfg(test)]
 extern crate alloc;
 
 use soroban_sdk::{
@@ -244,28 +245,20 @@ impl FraudDetectionContract {
         // ── Previous disputes ──
         if wallet_data.dispute_count > 0 {
             let dispute_points = wallet_data.dispute_count * 15;
-            let desc_str = alloc::format!(
-                "{} previous disputes detected (+{} points)",
-                wallet_data.dispute_count, dispute_points
-            );
             factors.push_back(RiskFactor {
                 name: String::from_str(&env, "disputes"),
                 points: dispute_points,
-                description: String::from_str(&env, &desc_str),
+                description: String::from_str(&env, "Previous disputes detected"),
             });
         }
 
         // ── Failed payments history ──
         if wallet_data.failed_payments > 0 {
             let fail_points = wallet_data.failed_payments * 5;
-            let desc_str = alloc::format!(
-                "{} failed payments in history (+{} points)",
-                wallet_data.failed_payments, fail_points
-            );
             factors.push_back(RiskFactor {
                 name: String::from_str(&env, "failed_payments"),
                 points: fail_points,
-                description: String::from_str(&env, &desc_str),
+                description: String::from_str(&env, "Failed payments in history"),
             });
         }
 

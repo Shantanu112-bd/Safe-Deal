@@ -938,7 +938,7 @@
             "data": {
               "vec": [
                 {
-                  "string": "caught panic 'Only Pending withdrawals can be cancelled' from contract function 'Symbol(obj#343)'"
+                  "string": "caught panic 'Only Pending withdrawals can be cancelled' from contract function 'Symbol(obj#345)'"
                 },
                 {
                   "string": "WDR-1"

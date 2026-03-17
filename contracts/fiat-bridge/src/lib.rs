@@ -1,7 +1,6 @@
 #![no_std]
+#[cfg(test)]
 extern crate alloc;
-
-use alloc::string::ToString;
 use soroban_sdk::{contract, contractimpl, contracttype, symbol_short, Address, Env, String, Vec};
 
 // ──────────────────────────────────────────────
@@ -312,8 +311,7 @@ impl FiatBridgeContract {
             .instance()
             .get(&DataKey::NextWithdrawalId)
             .unwrap_or(1);
-        let id_str = alloc::format!("WDR-{}", next_id);
-        let withdrawal_id = String::from_str(&env, &id_str);
+        let withdrawal_id = id_to_string(&env, "WDR-", next_id);
         env.storage()
             .instance()
             .set(&DataKey::NextWithdrawalId, &(next_id + 1));
@@ -487,8 +485,8 @@ impl FiatBridgeContract {
     }
 
     /// Get the mock exchange rate for a currency (stored x100).
-    pub fn get_exchange_rate(_env: Env, currency_code: String) -> u32 {
-        Self::_exchange_rate(&currency_code)
+    pub fn get_exchange_rate(env: Env, currency_code: String) -> u32 {
+        Self::_exchange_rate(&env, &currency_code)
     }
 
     // ─────────────────────── Queries ──────────────────────────────
@@ -531,7 +529,7 @@ impl FiatBridgeContract {
         currency_code: String,
         anchor_fee_bps: u32,
     ) -> FeeCalculation {
-        let rate = Self::_exchange_rate(&currency_code);
+        let rate = Self::_exchange_rate(env, &currency_code);
 
         let anchor_fee_usdc = (amount_usdc * anchor_fee_bps as i128) / BPS_DENOM;
         let safedeal_fee_usdc = (amount_usdc * SAFEDEAL_FEE_BPS as i128) / BPS_DENOM;
@@ -561,24 +559,43 @@ impl FiatBridgeContract {
     /// | BRL      | 4.90      | 490    |
     /// | PHP      | 56.00     | 5600   |
     /// | IDR      | 15900.00  | 1590000|
-    fn _exchange_rate(currency_code: &String) -> u32 {
-        // We can't use match on soroban String directly, so we compare manually.
-        const RATES: &[(&str, u32)] = &[
-            ("INR", 8_350),
-            ("NGN", 160_000),
-            ("BRL", 490),
-            ("PHP", 5_600),
-            ("IDR", 1_590_000),
-        ];
-
-        let code_bytes = currency_code.to_string();
-        for (code, rate) in RATES.iter() {
-            if code_bytes == *code {
-                return *rate;
-            }
-        }
+    fn _exchange_rate(env: &Env, currency_code: &String) -> u32 {
+        // Compare by creating Soroban Strings from static str literals.
+        if *currency_code == String::from_str(env, "INR")   { return 8_350; }
+        if *currency_code == String::from_str(env, "NGN")   { return 160_000; }
+        if *currency_code == String::from_str(env, "BRL")   { return 490; }
+        if *currency_code == String::from_str(env, "PHP")   { return 5_600; }
+        if *currency_code == String::from_str(env, "IDR")   { return 1_590_000; }
         panic!("Unsupported currency code");
     }
+}
+
+fn id_to_string(env: &Env, prefix: &str, mut num: u64) -> String {
+    let mut buf = [0u8; 32];
+    let prefix_bytes = prefix.as_bytes();
+    let mut len = prefix_bytes.len();
+    for i in 0..len {
+        buf[i] = prefix_bytes[i];
+    }
+    if num == 0 {
+        buf[len] = b'0';
+        len += 1;
+    } else {
+        let mut temp = num;
+        let mut num_len = 0;
+        while temp > 0 {
+            temp /= 10;
+            num_len += 1;
+        }
+        let mut i = num_len;
+        while num > 0 {
+            buf[len + i - 1] = b'0' + (num % 10) as u8;
+            num /= 10;
+            i -= 1;
+        }
+        len += num_len;
+    }
+    String::from_str(env, core::str::from_utf8(&buf[..len]).unwrap())
 }
 
 mod test;

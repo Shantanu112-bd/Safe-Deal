@@ -945,7 +945,7 @@
             "data": {
               "vec": [
                 {
-                  "string": "caught panic 'Withdrawal cannot be confirmed in current status' from contract function 'Symbol(obj#345)'"
+                  "string": "caught panic 'Withdrawal cannot be confirmed in current status' from contract function 'Symbol(obj#347)'"
                 },
                 {
                   "string": "WDR-1"
