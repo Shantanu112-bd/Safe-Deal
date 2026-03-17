@@ -42,11 +42,11 @@ SafeDeal is composed of 5 Soroban smart contracts + a Next.js frontend:
 
 | Contract | Description | Status | Testnet ID |
 |---|---|---|---|
-| `merchant-escrow` | Core escrow vault | ✅ Complete | `CDEJK...WXYZ1234` |
-| `fraud-detection` | AI risk scoring & analysis | ✅ Complete | `CFRAUD...WXYZ5678` |
-| `dispute-resolution` | Arbitration system | ✅ Complete | `CDISP...WXYZ9012` |
-| `seller-verification` | Trust badges & ratings | ✅ Complete | `CVERIFY...WXYZ3456` |
-| `fiat-bridge` | SEP-24 fiat rails | ✅ Complete | `CFIAT...WXYZ7890` |
+| `merchant-escrow` | Core escrow vault | ✅ Complete | `CDNK66APDPFR4IG5DNNV2RJBZEXNMVRYGU7XKZCFV5TU7AFUPZVLBS7Y` |
+| `fraud-detection` | AI risk scoring & analysis | ✅ Complete | `CBGB2X6AVHTPISG53BQH5COAHHPKSZ6DALUID3JTMLOQ2KVW5J63AOX5` |
+| `dispute-resolution` | Arbitration system | ✅ Complete | `CDB6UWIBHF32NIYIEMXFCLC5G36JYNJIEEYPB7U7VDNHYB7RIVWYFGZG` |
+| `seller-verification` | Trust badges & ratings | ✅ Complete | `CCBWZT6TUW2FBE2AKDG53ZJ55VZA6MVXOXFVKCQHTMIXYZ5PMIKJSNSR` |
+| `fiat-bridge` | SEP-24 fiat rails | ✅ Complete | `CCYXX3YDMOO7REDDGBALFPDQ52M44FV22USXBZQZ7DBAQKZNMSOMUCRK` |
 
 **Total: 148 tests — all passing ✅**
 
