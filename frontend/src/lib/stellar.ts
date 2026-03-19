@@ -100,22 +100,22 @@ const updateDealStatus = (dealId: string, newStatus: string, extra?: Record<stri
 // ──────────────────────────────────────────────
 
 const DEAL_STATUS_MAP: Record<number, string> = {
-  0: "waiting",    // WaitingForPayment
-  1: "locked",     // Locked
-  2: "completed",  // Completed
-  3: "disputed",   // Disputed
-  4: "refunded",   // Refunded
-  5: "cancelled",  // Cancelled
-  6: "expired",    // Expired
+  0: "WaitingForPayment",
+  1: "Locked",
+  2: "Completed",
+  3: "Disputed",
+  4: "Refunded",
+  5: "Cancelled",
+  6: "Expired",
 };
 
 const decodeDealStatus = (scVal: unknown): string => {
   try {
     // Soroban enum is encoded as a u32
-    if (typeof scVal === "number") return DEAL_STATUS_MAP[scVal] || "waiting";
-    return "waiting";
+    if (typeof scVal === "number") return DEAL_STATUS_MAP[scVal] || "WaitingForPayment";
+    return "WaitingForPayment";
   } catch {
-    return "waiting";
+    return "WaitingForPayment";
   }
 };
 
@@ -153,16 +153,15 @@ export const createEscrowTransaction = async (
       walletType
     );
 
-    // The return value is the deal_id string
-    const resultVal = TransactionBuilder.fromXDR(result.resultXdr, PASSPHRASE);
-    let dealId = result.txHash.slice(0, 8); // fallback
-    try {
-      // Try to extract the deal ID from the result
-      if (resultVal && "operations" in resultVal) {
-        dealId = result.txHash.slice(0, 12);
+    // The return value of create_deal is the deal_id string
+    let dealId = result.txHash.slice(0, 12); // fallback
+    if (result.simulatedResult) {
+      try {
+        const decoded = fromScString(result.simulatedResult);
+        if (decoded) dealId = decoded;
+      } catch (e) {
+        console.warn("Failed to decode dealId from simulatedResult", e);
       }
-    } catch {
-      // use txHash prefix as deal ID
     }
 
     return { success: true, dealId };
@@ -186,7 +185,7 @@ export const createEscrowTransaction = async (
     amountUSDC: amount,
     sellerKey: merchantAddress,
     walletType,
-    status: "waiting",
+    status: "WaitingForPayment",
     createdAt: Date.now(),
     expiresAt,
   };
@@ -352,7 +351,15 @@ export const getDeal = async (dealId: string): Promise<DealData | null> => {
   try {
     const raw = localStorage.getItem(`safedeal_deal_${dealId}`);
     if (!raw) return null;
-    return JSON.parse(raw) as DealData;
+    const d = JSON.parse(raw) as DealData;
+    if (d.status === "waiting") d.status = "WaitingForPayment";
+    if (d.status === "locked") d.status = "Locked";
+    if (d.status === "completed") d.status = "Completed";
+    if (d.status === "disputed") d.status = "Disputed";
+    if (d.status === "refunded") d.status = "Refunded";
+    if (d.status === "cancelled") d.status = "Cancelled";
+    if (d.status === "expired") d.status = "Expired";
+    return d;
   } catch {
     return null;
   }
@@ -384,6 +391,7 @@ export const getSellerDeals = async (sellerAddress: string): Promise<DealData[]>
           category: "",
           amountUSDC: fromScAmount(map["amount"]),
           sellerKey: fromScAddress(map["seller"]),
+          buyerKey: map["buyer"] ? fromScAddress(map["buyer"]) : undefined,
           status: decodeDealStatus(fromScU32(map["status"])),
           createdAt: fromScU64(map["created_at"]) * 1000,
           expiresAt: fromScU64(map["expiry_at"]) * 1000,
@@ -400,7 +408,16 @@ export const getSellerDeals = async (sellerAddress: string): Promise<DealData[]>
     const raw = localStorage.getItem("safedeal_deals");
     if (!raw) return [];
     const all = JSON.parse(raw) as DealData[];
-    return all.filter((d) => d.sellerKey === sellerAddress);
+    return all.filter((d) => d.sellerKey === sellerAddress).map(d => {
+      if (d.status === "waiting") d.status = "WaitingForPayment";
+      if (d.status === "locked") d.status = "Locked";
+      if (d.status === "completed") d.status = "Completed";
+      if (d.status === "disputed") d.status = "Disputed";
+      if (d.status === "refunded") d.status = "Refunded";
+      if (d.status === "cancelled") d.status = "Cancelled";
+      if (d.status === "expired") d.status = "Expired";
+      return d;
+    });
   } catch {
     return [];
   }
@@ -449,7 +466,16 @@ export const getBuyerDeals = async (buyerAddress: string): Promise<DealData[]> =
     const raw = localStorage.getItem("safedeal_deals");
     if (!raw) return [];
     const all = JSON.parse(raw) as DealData[];
-    return all.filter((d) => d.buyerKey === buyerAddress);
+    return all.filter((d) => d.buyerKey === buyerAddress).map(d => {
+      if (d.status === "waiting") d.status = "WaitingForPayment";
+      if (d.status === "locked") d.status = "Locked";
+      if (d.status === "completed") d.status = "Completed";
+      if (d.status === "disputed") d.status = "Disputed";
+      if (d.status === "refunded") d.status = "Refunded";
+      if (d.status === "cancelled") d.status = "Cancelled";
+      if (d.status === "expired") d.status = "Expired";
+      return d;
+    });
   } catch {
     return [];
   }

@@ -21,28 +21,48 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ProfileSkeleton } from "@/components/ui/loading-skeletons";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { getDeal } from "@/lib/stellar";
 
-type DealStatus = "waiting" | "locked" | "shipped" | "completed" | "disputed";
+type DealStatus = "waiting" | "waitingforpayment" | "locked" | "shipped" | "completed" | "disputed";
 
 export default function DealDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [status, setStatus] = useState<DealStatus>("locked");
   const [loading, setLoading] = useState(true);
 
-  // Mock data for the specific deal
-  const deal = {
-    id: params.id,
-    title: "Handmade Silver Earrings",
-    amountUSDC: "2,400.00",
-    buyer: "GCKF...WXQR",
-    createdDate: "March 13, 2:30 PM",
-    lockedDate: "March 13, 3:45 PM",
-  };
+  const [deal, setDeal] = useState<any>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 800);
-    return () => clearTimeout(timer);
-  }, []);
+    if (!params.id) return;
+
+    const loadDeal = async () => {
+      setLoading(true);
+      try {
+        const d = await getDeal(params.id);
+        if (d) {
+          setDeal(d);
+          setStatus(d.status.toLowerCase() as DealStatus);
+        } else {
+          toast.error("Deal not found");
+        }
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load deal details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDeal();
+  }, [params.id]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && deal) {
+      if (localStorage.getItem(`shipped_${deal.id}`) === "true" && deal.status === "Locked") {
+        setStatus("shipped");
+      }
+    }
+  }, [deal]);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(`safedeal.app/deal/${deal.id}`);
@@ -117,13 +137,13 @@ export default function DealDetailPage({ params }: { params: { id: string } }) {
                 <div className="space-y-12 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-100">
                    <TimelineItem 
                       title="Deal Created"
-                      subtitle={deal.createdDate}
+                      subtitle={new Date(deal.createdAt).toLocaleString()}
                       completed
                    />
                    <TimelineItem 
                       title="Payment Locked"
-                      subtitle={`${deal.lockedDate} — "Buyer ${deal.buyer} locked ${deal.amountUSDC} USDC"`}
-                      completed={status !== "waiting"}
+                      subtitle={`"Buyer ${deal.buyerKey ? deal.buyerKey.slice(0, 6) + '...' : 'Unknown'} locked ${deal.amountUSDC} USDC"`}
+                      completed={status !== "waiting" && status !== "waitingforpayment"}
                       active={status === "locked"}
                    />
                    <TimelineItem 

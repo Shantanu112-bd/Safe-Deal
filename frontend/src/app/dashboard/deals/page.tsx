@@ -4,31 +4,20 @@ import { useState, useEffect, useCallback } from "react";
 import {
   Search,
   Plus,
-  ShoppingBag,
-  Clock,
-  Share2,
-  ExternalLink
+  ShoppingBag
 } from "lucide-react";
 import { GradientButton } from "@/components/ui/gradient-button";
 import { CreateDealModal } from "@/components/deal/CreateDealModal";
 import { cn } from "@/lib/utils";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { useWallet } from "@/context/WalletContext";
+import { DealCardSkeleton } from "@/components/ui/loading-skeletons";
+import { DealCard } from "@/components/ui/DealCard";
 import Link from "next/link";
 import { toast } from "sonner";
 import { getSellerDeals, type DealData } from "@/lib/stellar";
 
 type Status = "all" | "WaitingForPayment" | "Locked" | "Disputed";
-
-const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
-  WaitingForPayment:  { label: "Waiting for Payment", color: "text-amber-600",   bg: "bg-amber-50 border-amber-100" },
-  Locked:   { label: "Payment Locked",      color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-100" },
-  Disputed: { label: "Disputed",            color: "text-red-600",     bg: "bg-red-50 border-red-100" },
-  Completed:{ label: "Completed",           color: "text-slate-600",   bg: "bg-slate-50 border-slate-200" },
-  Refunded: { label: "Refunded",            color: "text-orange-600",  bg: "bg-orange-50 border-orange-100" },
-  Cancelled:{ label: "Cancelled",           color: "text-slate-500",   bg: "bg-slate-50 border-slate-200" },
-  Expired:  { label: "Expired",             color: "text-red-600",     bg: "bg-red-50 border-red-100" },
-};
 
 export default function ActiveDealsPage() {
   const [showCreate, setShowCreate] = useState(false);
@@ -37,8 +26,13 @@ export default function ActiveDealsPage() {
   const [deals, setDeals] = useState<DealData[]>([]);
   const { isConnected, publicKey } = useWallet();
 
+  const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [secondsAgo, setSecondsAgo] = useState(0);
+
   const loadDeals = useCallback(async () => {
     try {
+      if (deals.length === 0) setLoading(true);
       if (publicKey) {
         // Uses Soroban contract when deployed, localStorage otherwise
         const result = await getSellerDeals(publicKey);
@@ -62,16 +56,32 @@ export default function ActiveDealsPage() {
         }
         else setDeals([]);
       }
+      setLastUpdated(new Date());
     } catch {
       setDeals([]);
+    } finally {
+      if (deals.length === 0) setLoading(false);
     }
-  }, [publicKey]);
+  }, [publicKey, deals.length]);
 
   useEffect(() => {
     loadDeals();
     window.addEventListener("focus", loadDeals);
-    return () => window.removeEventListener("focus", loadDeals);
+    const interval = setInterval(() => {
+      loadDeals();
+    }, 30000);
+    return () => {
+      window.removeEventListener("focus", loadDeals);
+      clearInterval(interval);
+    };
   }, [loadDeals]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSecondsAgo(Math.floor((Date.now() - lastUpdated.getTime()) / 1000));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lastUpdated]);
 
   const handleModalClose = () => {
     setShowCreate(false);
@@ -85,30 +95,6 @@ export default function ActiveDealsPage() {
       deal.id.toLowerCase().includes(search.toLowerCase());
     return matchesStatus && matchesSearch;
   });
-
-  const handleShare = (deal: DealData) => {
-    const url = `${window.location.origin}/deal/${deal.id}`;
-    navigator.clipboard.writeText(url);
-    toast.success("Deal link copied to clipboard!");
-  };
-
-  const timeAgo = (ts: number) => {
-    const diff = Date.now() - ts;
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "just now";
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    return `${Math.floor(hrs / 24)}d ago`;
-  };
-
-  const expiresLabel = (expiresAt: number) => {
-    const mins = Math.max(0, Math.floor((expiresAt - Date.now()) / 60000));
-    if (mins === 0) return "Expired";
-    if (mins > 1440) return `${Math.floor(mins / 1440)}d left`;
-    if (mins > 60)   return `${Math.floor(mins / 60)}h left`;
-    return `${mins}m left`;
-  };
 
   return (
     <ErrorBoundary>
@@ -167,85 +153,35 @@ export default function ActiveDealsPage() {
 
           {/* DEALS LIST */}
           <div className="grid gap-6">
-            {filteredDeals.length > 0 ? (
-              filteredDeals.map((deal) => {
-                const config = statusConfig[deal.status] ?? statusConfig["WaitingForPayment"];
-                const label = expiresLabel(deal.expiresAt);
-                const expired = label === "Expired";
-
-                return (
-                  <div
-                    key={deal.id}
-                    className="group block rounded-[2.5rem] bg-white border border-slate-100 p-6 sm:p-8 shadow-sm transition-all hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                      <div className="flex gap-6 items-center">
-                        <div className="size-16 rounded-3xl bg-slate-50 flex items-center justify-center text-2xl ring-1 ring-slate-100 group-hover:bg-white transition-colors">
-                          🛍️
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Deal #{deal.id}</p>
-                          <h3 className="text-xl font-black text-slate-900 tracking-tight">{deal.title}</h3>
-                          <div className="flex items-center flex-wrap gap-3 mt-2">
-                            <span className="text-sm font-black text-emerald-600">{deal.amountUSDC.toFixed(2)} USDC</span>
-                            <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border", config.bg, config.color)}>
-                              {config.label}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col sm:items-end justify-between gap-4">
-                        <div className="text-[10px] font-bold text-slate-400 space-y-1">
-                          <div className="flex items-center gap-1.5 sm:justify-end">
-                            <Clock className="size-2.5" />
-                            Created {timeAgo(deal.createdAt)}
-                          </div>
-                          <div className={cn("flex items-center gap-1.5 sm:justify-end", expired ? "text-red-500" : "text-amber-600")}>
-                            {label}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleShare(deal)}
-                            className="size-10 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-100 text-slate-400 hover:text-slate-900 transition-colors"
-                            title="Copy shareable link"
-                          >
-                            <Share2 className="size-4" />
-                          </button>
-                          <Link
-                            href={`/deal/${deal.id}`}
-                            target="_blank"
-                            className="size-10 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-100 text-slate-400 hover:text-slate-900 transition-colors"
-                            title="Open buyer page"
-                          >
-                            <ExternalLink className="size-4" />
-                          </Link>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
+            {loading ? (
+              <>
+                <DealCardSkeleton />
+                <DealCardSkeleton />
+                <DealCardSkeleton />
+              </>
+            ) : filteredDeals.length > 0 ? (
+              filteredDeals.map((deal) => (
+                <DealCard key={deal.id} deal={deal} onRefresh={loadDeals} />
+              ))
             ) : (
               <div className="py-24 flex flex-col items-center text-center space-y-6">
                 <div className="size-20 rounded-[2rem] bg-slate-100 flex items-center justify-center text-slate-300">
                   <ShoppingBag className="size-10" />
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">No Deals Found</h3>
+                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">No deals yet</h3>
                   <p className="text-sm font-bold text-slate-400 max-w-xs mx-auto uppercase tracking-widest leading-relaxed">
                     {!isConnected
                       ? "Connect your wallet to view and create deals."
                       : search || filter !== "all"
                       ? "No deals match your current filters."
-                      : "Create your first deal to start accepting secure payments."}
+                      : "Create your first deal to get started"}
                   </p>
                 </div>
                 {isConnected && !search && filter === "all" && (
                   <GradientButton onClick={() => setShowCreate(true)} className="rounded-xl px-8 py-4">
                     <Plus className="mr-2 size-4" />
-                    Create First Deal
+                    Create New Deal
                   </GradientButton>
                 )}
               </div>
@@ -253,7 +189,7 @@ export default function ActiveDealsPage() {
           </div>
         </main>
       </div>
-      <CreateDealModal open={showCreate} onClose={handleModalClose} />
+      <CreateDealModal open={showCreate} onClose={handleModalClose} onDealCreated={() => loadDeals()} />
     </ErrorBoundary>
   );
 }

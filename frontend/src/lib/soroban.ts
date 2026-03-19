@@ -104,7 +104,7 @@ export const buildContractTx = async (
     networkPassphrase: PASSPHRASE || Networks.TESTNET,
   })
     .addOperation(contract.call(method, ...args))
-    .setTimeout(60);
+    .setTimeout(300); // 5 minutes timeout to ensure users have enough time to sign
 
   return builder;
 };
@@ -114,7 +114,7 @@ export const buildContractTx = async (
  */
 export const simulateAndPrepare = async (
   builder: TransactionBuilder
-): Promise<string> => {
+): Promise<{ preparedXdr: string; simulatedResult?: xdr.ScVal }> => {
   const tx = builder.build();
 
   const simResponse = await rpcServer.simulateTransaction(tx);
@@ -127,9 +127,22 @@ export const simulateAndPrepare = async (
     throw new Error(`Contract simulation error: ${errorMsg}`);
   }
 
+  // Add a 20% margin to the fee to prevent tx_insufficient_fee due to ledger fluctuations
+  if (rpc.Api.isSimulationSuccess(simResponse) && simResponse.minResourceFee) {
+    const feeWithMargin = (BigInt(simResponse.minResourceFee) * BigInt(120)) / BigInt(100);
+    simResponse.minResourceFee = feeWithMargin.toString();
+  }
+
   // Prepare the transaction with the simulation result
   const preparedTx = rpc.assembleTransaction(tx, simResponse);
-  return preparedTx.build().toXDR();
+  
+  // Extract simulated result if successful
+  let simulatedResult: xdr.ScVal | undefined;
+  if (rpc.Api.isSimulationSuccess(simResponse) && simResponse.result) {
+    simulatedResult = simResponse.result.retval;
+  }
+
+  return { preparedXdr: preparedTx.build().toXDR(), simulatedResult };
 };
 
 /**
@@ -138,17 +151,36 @@ export const simulateAndPrepare = async (
  */
 export const signAndSubmit = async (
   preparedXdr: string,
-  walletType: WalletType
+  walletType: WalletType,
+  sourcePublicKey: string
 ): Promise<{ txHash: string; resultXdr: string }> => {
   // 1. Sign with the user's wallet
-  const signedXdr = await signTransaction(preparedXdr, walletType, PASSPHRASE);
+  const signedXdr = await signTransaction(preparedXdr, walletType, PASSPHRASE, sourcePublicKey);
 
   // 2. Submit to network
   const tx = TransactionBuilder.fromXDR(signedXdr, PASSPHRASE);
   const sendResponse = await rpcServer.sendTransaction(tx);
 
   if (sendResponse.status === "ERROR") {
-    throw new Error(`Transaction submission failed: ${sendResponse.status}`);
+    console.error(`Transaction submission failed. Status: ${sendResponse.status}, Hash: ${sendResponse.hash}`);
+    let errName = "UNKNOWN";
+    let rawXdr = "";
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const anyRes = sendResponse as any;
+    
+    if (sendResponse.errorResult) {
+      try {
+        errName = sendResponse.errorResult.result().switch().name;
+        rawXdr = sendResponse.errorResult.toXDR("base64");
+      } catch {
+        errName = "PARSE_ERROR";
+      }
+    } else if (anyRes.errorResultXdr) {
+      rawXdr = anyRes.errorResultXdr;
+    }
+    
+    throw new Error(`Transaction Rejected by Network: ${errName}. Details: ${rawXdr}`);
   }
 
   // 3. Poll for result
@@ -165,7 +197,7 @@ export const signAndSubmit = async (
   if (getResponse.status === "SUCCESS") {
     return {
       txHash,
-      resultXdr: getResponse.resultXdr?.toXDR("base64") || "",
+      resultXdr: getResponse.resultMetaXdr?.toXDR("base64") || "",
     };
   }
 
@@ -184,7 +216,7 @@ export const invokeContract = async (
   method: string,
   args: xdr.ScVal[],
   walletType: WalletType
-): Promise<{ txHash: string; resultXdr: string }> => {
+): Promise<{ txHash: string; resultXdr: string; simulatedResult?: xdr.ScVal }> => {
   const contractId = CONTRACTS[contractKey];
   if (!isContractDeployed(contractId)) {
     throw new Error(
@@ -194,8 +226,9 @@ export const invokeContract = async (
 
   const contract = new Contract(contractId);
   const builder = await buildContractTx(sourcePublicKey, contract, method, args);
-  const preparedXdr = await simulateAndPrepare(builder);
-  return await signAndSubmit(preparedXdr, walletType);
+  const { preparedXdr, simulatedResult } = await simulateAndPrepare(builder);
+  const { txHash, resultXdr } = await signAndSubmit(preparedXdr, walletType, sourcePublicKey);
+  return { txHash, resultXdr, simulatedResult };
 };
 
 /**

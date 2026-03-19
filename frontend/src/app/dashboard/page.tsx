@@ -25,28 +25,47 @@ export default function Dashboard() {
   const [deals, setDeals] = useState<DealData[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load deals
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [secondsAgo, setSecondsAgo] = useState(0);
+
+  const loadDeals = async () => {
+    if (!publicKey) return;
+    try {
+      if (deals.length === 0) setLoading(true);
+      const sellerDeals = await getSellerDeals(publicKey);
+      setDeals(sellerDeals || []);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Failed to load deals:', error);
+      setDeals([]);
+    } finally {
+      if (deals.length === 0) setLoading(false);
+    }
+  };
+
+  // Load deals & Poll
   useEffect(() => {
     if (!publicKey) {
       setLoading(false);
       return;
     }
 
-    const loadDeals = async () => {
-      try {
-        setLoading(true);
-        // Use the smart contract or fallback
-        const sellerDeals = await getSellerDeals(publicKey);
-        setDeals(sellerDeals);
-      } catch (error) {
-        console.error('Failed to load deals:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadDeals();
+
+    const interval = setInterval(() => {
+      loadDeals();
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, [publicKey]);
+
+  // Seconds ago timer
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSecondsAgo(Math.floor((Date.now() - lastUpdated.getTime()) / 1000));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lastUpdated]);
 
   // Calculations
   const activeDealsList = deals.filter(d => 
@@ -57,6 +76,12 @@ export default function Dashboard() {
   
   const activeDealsCount = activeDealsList.length;
 
+  const completedDeals = deals.filter(d => d.status === 'Completed').length;
+  
+  const totalEarned = deals
+    .filter(d => d.status === 'Completed')
+    .reduce((sum, d) => sum + Number(d.amountUSDC || 0), 0);
+
   // Truncate public key for display
   const shortKey = publicKey
     ? `${publicKey.slice(0, 6)}...${publicKey.slice(-4)}`
@@ -64,8 +89,8 @@ export default function Dashboard() {
 
   const stats = [
     { label: "Active Deals", value: activeDealsCount.toString(), sub: activeDealsCount > 0 ? "Requires action" : "None yet", color: "text-slate-900" },
-    { label: "USDC Balance", value: `${parseFloat(usdcBalance || "0").toFixed(2)}`, sub: "In wallet", color: "text-emerald-600" },
-    { label: "XLM Balance", value: `${parseFloat(xlmBalance || "0").toFixed(2)}`, sub: "For fees", color: "text-blue-600" },
+    { label: "Completed Deals", value: completedDeals.toString(), sub: "Successful trades", color: "text-emerald-600" },
+    { label: "Total Earned", value: `${totalEarned.toFixed(2)} USDC`, sub: "Historical earnings", color: "text-blue-600" },
     { label: "Risk Score", value: fraudScore > 0 ? `${fraudScore}` : "—", sub: fraudLevel || "Connect wallet", color: "text-slate-900" },
   ];
 
@@ -114,9 +139,14 @@ export default function Dashboard() {
 
               {/* EMPTY STATE / ACTIVE DEALS */}
               <article className="rounded-[2.5rem] bg-white border border-slate-100 shadow-sm overflow-hidden">
-                <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between">
-                  <h2 className="text-sm font-black uppercase tracking-widest text-slate-900">Active Deals</h2>
-                  <span className="text-[10px] font-black bg-slate-100 text-slate-500 px-2 py-1 rounded-lg">Live</span>
+                <div className="px-8 py-6 border-b border-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h2 className="text-sm font-black uppercase tracking-widest text-slate-900">Active Deals</h2>
+                    {isConnected && (
+                      <p className="text-[10px] font-bold text-slate-400 mt-1">Last updated {secondsAgo} seconds ago</p>
+                    )}
+                  </div>
+                  <span className="text-[10px] font-black bg-slate-100 text-slate-500 px-2 py-1 rounded-lg w-fit">Live</span>
                 </div>
 
                 {!isConnected ? (
@@ -230,7 +260,7 @@ export default function Dashboard() {
           )}
         </main>
 
-        <CreateDealModal open={showCreate} onClose={() => setShowCreate(false)} />
+        <CreateDealModal open={showCreate} onClose={() => setShowCreate(false)} onDealCreated={() => loadDeals()} />
       </div>
     </ErrorBoundary>
   );

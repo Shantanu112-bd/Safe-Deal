@@ -66,12 +66,16 @@ export const getBalances = async (publicKey: string) => {
 export const signTransaction = async (
   xdr: string, 
   walletType: WalletType,
-  networkPassphrase: string = "Test SDF Network ; September 2015"
+  networkPassphrase: string = "Test SDF Network ; September 2015",
+  publicKey?: string
 ) => {
   if (walletType === "freighter") {
     const result = await signFreighter(xdr, { 
-      networkPassphrase
-    });
+      networkPassphrase,
+      network: "TESTNET",
+      address: publicKey
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
     if (typeof result === "string") return result;
     if (result && "signedTxXdr" in result) return result.signedTxXdr;
     throw new Error("Failed to sign with Freighter");

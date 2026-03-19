@@ -28,13 +28,14 @@ import { toast } from "sonner";
 type Props = {
   open: boolean;
   onClose: () => void;
+  onDealCreated?: () => void;
 };
 
 type Step = 1 | 2 | 3;
 
 const INR_PER_USDC = 83.5;
 
-export function CreateDealModal({ open, onClose }: Props) {
+export function CreateDealModal({ open, onClose, onDealCreated }: Props) {
   const { publicKey, walletType } = useWallet();
   const [step, setStep] = useState<Step>(1);
   const [itemName, setItemName] = useState("");
@@ -122,6 +123,7 @@ export function CreateDealModal({ open, onClose }: Props) {
       if (result.success) {
         setFinalDealId(result.dealId);
         setStep(3);
+        onDealCreated?.();
         toast.success(`Deal #${result.dealId} created successfully!`);
       }
     } catch (err) {
