@@ -13,8 +13,6 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import { useWallet } from "@/context/WalletContext";
 import { DealCardSkeleton } from "@/components/ui/loading-skeletons";
 import { DealCard } from "@/components/ui/DealCard";
-import Link from "next/link";
-import { toast } from "sonner";
 import { getSellerDeals, type DealData } from "@/lib/stellar";
 
 type Status = "all" | "WaitingForPayment" | "Locked" | "Disputed";
@@ -28,7 +26,6 @@ export default function ActiveDealsPage() {
 
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-  const [secondsAgo, setSecondsAgo] = useState(0);
 
   const loadDeals = useCallback(async () => {
     try {
@@ -76,12 +73,6 @@ export default function ActiveDealsPage() {
     };
   }, [loadDeals]);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setSecondsAgo(Math.floor((Date.now() - lastUpdated.getTime()) / 1000));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [lastUpdated]);
 
   const handleModalClose = () => {
     setShowCreate(false);

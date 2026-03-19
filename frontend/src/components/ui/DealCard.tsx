@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Clock, Share2, ExternalLink, Info, CheckCircle2, ShieldAlert } from "lucide-react";
+import { Clock, Share2, Info, CheckCircle2, ShieldAlert } from "lucide-react";
 import { GradientButton } from "./gradient-button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";

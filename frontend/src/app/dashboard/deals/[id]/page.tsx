@@ -21,7 +21,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ProfileSkeleton } from "@/components/ui/loading-skeletons";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { getDeal } from "@/lib/stellar";
+import { getDeal, type DealData } from "@/lib/stellar";
 
 type DealStatus = "waiting" | "waitingforpayment" | "locked" | "shipped" | "completed" | "disputed";
 
@@ -30,7 +30,7 @@ export default function DealDetailPage({ params }: { params: { id: string } }) {
   const [status, setStatus] = useState<DealStatus>("locked");
   const [loading, setLoading] = useState(true);
 
-  const [deal, setDeal] = useState<any>(null);
+  const [deal, setDeal] = useState<DealData | null>(null);
 
   useEffect(() => {
     if (!params.id) return;
@@ -65,11 +65,12 @@ export default function DealDetailPage({ params }: { params: { id: string } }) {
   }, [deal]);
 
   const handleCopyLink = () => {
+    if (!deal) return;
     navigator.clipboard.writeText(`safedeal.app/deal/${deal.id}`);
     toast.success("Link copied to clipboard");
   };
 
-  if (loading) {
+  if (loading || !deal) {
     return (
       <div className="min-h-screen bg-slate-50 p-6 lg:p-12">
         <div className="max-w-4xl mx-auto">

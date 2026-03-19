@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Shield,
   Plus,
@@ -21,14 +21,14 @@ import Link from "next/link";
 
 export default function Dashboard() {
   const [showCreate, setShowCreate] = useState(false);
-  const { publicKey, xlmBalance, usdcBalance, fraudScore, fraudLevel, isConnected } = useWallet();
+  const { publicKey, fraudScore, fraudLevel, isConnected } = useWallet();
   const [deals, setDeals] = useState<DealData[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [secondsAgo, setSecondsAgo] = useState(0);
 
-  const loadDeals = async () => {
+  const loadDeals = useCallback(async () => {
     if (!publicKey) return;
     try {
       if (deals.length === 0) setLoading(true);
@@ -41,7 +41,7 @@ export default function Dashboard() {
     } finally {
       if (deals.length === 0) setLoading(false);
     }
-  };
+  }, [publicKey, deals.length]);
 
   // Load deals & Poll
   useEffect(() => {
@@ -57,7 +57,7 @@ export default function Dashboard() {
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [publicKey]);
+  }, [publicKey, loadDeals]);
 
   // Seconds ago timer
   useEffect(() => {
