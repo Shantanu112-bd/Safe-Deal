@@ -1,5 +1,5 @@
 import freighter from "@stellar/freighter-api";
-const { isConnected, getAddress, signTransaction: signFreighter } = freighter;
+const { isConnected, requestAccess, getAddress, signTransaction: signFreighter } = freighter;
 import albedo from "@albedo-link/intent";
 import { 
   Horizon 
@@ -15,10 +15,18 @@ const server = new Horizon.Server(HORIZON_URL);
  */
 export const connectFreighter = async () => {
   if (await isConnected()) {
-    const { address } = await getAddress();
+    // requestAccess pops up the Freighter extension asking the user for authorization!
+    const result = await requestAccess();
+    if (result.error) {
+       throw new Error(result.error);
+    }
+    const address = typeof result === "string" ? result : result.address || await getAddress().then(r => r.address);
+    if (!address) {
+       throw new Error("User declined connection");
+    }
     return { publicKey: address, walletType: "freighter" as const };
   }
-  throw new Error("Freighter not installed");
+  throw new Error("Freighter not installed. Please install Freighter Extension to connect.");
 };
 
 /**

@@ -8,11 +8,10 @@ import { cn } from "@/lib/utils";
 
 export const WalletConnect = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { isConnected, publicKey } = useWallet();
+  const { isConnected, publicKey, fraudScore, fraudLevel } = useWallet();
   
-  // Mocked for now, will be implemented with contract calls/API later
-  const isBlocked = false;
-  const riskScore = 12;
+  const isBlocked = fraudLevel === "Blocked";
+  const riskScore = fraudScore;
   const loading = false;
 
   return (

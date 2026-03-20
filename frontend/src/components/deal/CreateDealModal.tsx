@@ -86,10 +86,20 @@ export function CreateDealModal({ open, onClose, onDealCreated }: Props) {
     [expiryDate]
   );
 
+  const getBaseUrl = () => {
+    if (typeof window !== "undefined") {
+      if (window.location.hostname === "localhost") {
+        return "https://safe-deal-ten.vercel.app";
+      }
+      return window.location.origin;
+    }
+    return "https://safe-deal-ten.vercel.app";
+  };
+
   const dealId = finalDealId ?? "pending";
   const dealUrl = finalDealId
-    ? `${window.location.origin}/deal/${finalDealId}`
-    : `${typeof window !== "undefined" ? window.location.origin : "https://safedeal.app"}/deal/pending`;
+    ? `${getBaseUrl()}/deal/${finalDealId}`
+    : `${getBaseUrl()}/deal/pending`;
 
   const handleNext = () => {
     if (!itemName.trim()) {

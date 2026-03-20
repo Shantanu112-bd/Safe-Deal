@@ -55,7 +55,10 @@ export function DealCard({ deal, onRefresh }: DealCardProps) {
   };
 
   const handleShare = () => {
-    const dealUrl = `${window.location.origin}/deal/${deal.id}`;
+    const baseUrl = typeof window !== "undefined" && window.location.hostname === "localhost"
+      ? "https://safe-deal-ten.vercel.app"
+      : window.location.origin;
+    const dealUrl = `${baseUrl}/deal/${deal.id}`;
     navigator.clipboard.writeText(dealUrl);
     toast.success("Payment link copied to clipboard!");
     toast.success("Share on WhatsApp: wa.me/?text=...");
