@@ -160,6 +160,16 @@ export function CreateDealModal({ open, onClose, onDealCreated }: Props) {
     window.open(`https://t.me/share/url?url=${encodeURIComponent(dealUrl)}&text=${encodeURIComponent(shareText)}`, "_blank");
   };
 
+  const shareOnInstagram = () => {
+    navigator.clipboard.writeText(shareText);
+    toast.success("Message copied! Ready to paste in Instagram.", {
+      description: "Opening Instagram in a moment...",
+    });
+    setTimeout(() => {
+      window.open("https://www.instagram.com/direct/inbox/", "_blank");
+    }, 1500);
+  };
+
   if (!open) return null;
 
   return (
@@ -413,7 +423,7 @@ export function CreateDealModal({ open, onClose, onDealCreated }: Props) {
                          <span className="text-[10px] font-black uppercase tracking-widest">WhatsApp</span>
                       </button>
                       <button 
-                        onClick={handleCopyLink}
+                        onClick={shareOnInstagram}
                         className="flex items-center sm:flex-col justify-center gap-2.5 p-4 rounded-2xl bg-[#E1306C]/10 border border-[#E1306C]/20 text-[#E1306C] hover:bg-[#E1306C]/15 transition-all group min-h-[44px]"
                       >
                          <Instagram className="size-5" />

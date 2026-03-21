@@ -55,7 +55,6 @@ export default function BuyerPaymentPage({ params }: { params: { id: string } })
   const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState(172800); // 48 hours
   const [payoutTxHash, setPayoutTxHash] = useState<string | null>(null);
-  const [paymentTxHash, setPaymentTxHash] = useState<string | null>(null);
   const router = useRouter();
 
   // Dispute Modal States
@@ -105,7 +104,6 @@ export default function BuyerPaymentPage({ params }: { params: { id: string } })
     try {
       const result = await lockPayment(params.id, deal.amountUSDC, walletType, publicKey || undefined);
       if (result.success) {
-        if (result.txHash) setPaymentTxHash(result.txHash);
         setStep("success");
         toast.success("Payment locked in escrow!");
       }
